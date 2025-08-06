@@ -639,7 +639,7 @@
                 activeTab: 'calendar',
                 selectedDate: new Date(),
                 
-                // Currency system
+                // Currency system with localStorage persistence
                 currentCurrency: { code: 'USD', symbol: '$', name: 'US Dollar' },
                 exchangeRate: 58.013569, // Default PHP rate
                 currencies: {
@@ -839,9 +839,25 @@
                     this.newExpense.category = suggestion.cat;
                 },
 
-                // Currency functionality
+                // Currency functionality with localStorage persistence
                 async init() {
                     await this.fetchExchangeRate();
+                    this.loadCurrencyPreference();
+                },
+
+                // Load saved currency preference from localStorage
+                loadCurrencyPreference() {
+                    const savedCurrency = localStorage.getItem('expense_tracker_currency');
+                    if (savedCurrency && this.currencies[savedCurrency]) {
+                        this.currentCurrency = this.currencies[savedCurrency];
+                        console.log(`Loaded saved currency preference: ${savedCurrency}`);
+                    }
+                },
+
+                // Save currency preference to localStorage
+                saveCurrencyPreference() {
+                    localStorage.setItem('expense_tracker_currency', this.currentCurrency.code);
+                    console.log(`Saved currency preference: ${this.currentCurrency.code}`);
                 },
 
                 async fetchExchangeRate() {
@@ -863,6 +879,12 @@
                     this.currentCurrency = this.currentCurrency.code === 'USD' 
                         ? this.currencies.PHP 
                         : this.currencies.USD;
+                    
+                    // Save the new currency preference
+                    this.saveCurrencyPreference();
+                    
+                    // Show toast notification
+                    this.showToast(`Currency switched to ${this.currentCurrency.name}`, 'success');
                 },
 
                 convertCurrency(usdAmount) {
