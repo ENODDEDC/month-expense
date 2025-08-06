@@ -38,6 +38,7 @@
         }
     </script>
     <style>
+        [x-cloak] { display: none !important; }
         .glass-effect {
             backdrop-filter: blur(10px);
             background: rgba(255, 255, 255, 0.1);
@@ -590,40 +591,44 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-        </div>
-    </div>
 
-    <!-- Notification Toast -->
-    <div
-        x-show="showToast"
-        x-cloak
-        x-transition:enter="transition ease-out duration-300"
-        x-transition:enter-start="transform translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-        x-transition:enter-end="transform translate-y-0 opacity-100 sm:translate-x-0"
-        x-transition:leave="transition ease-in duration-200"
-        x-transition:leave-start="opacity-100"
-        x-transition:leave-end="opacity-0"
-        class="fixed bottom-5 right-5 w-full max-w-xs bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden z-50"
-    >
-        <div class="p-4">
-            <div class="flex items-start">
-                <div class="flex-shrink-0">
-                    <svg class="h-6 w-6 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div class="ml-3 w-0 flex-1 pt-0.5">
-                    <p class="text-sm font-medium text-gray-900" x-text="toastMessage"></p>
-                </div>
-                <div class="ml-4 flex-shrink-0 flex">
-                    <button @click="showToast = false" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        <span class="sr-only">Close</span>
-                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
+            <!-- Enhanced Notification Toast - Inside Alpine.js scope -->
+            <div
+                x-show="toastVisible"
+                x-cloak
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="transform translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+                x-transition:enter-end="transform translate-y-0 opacity-100 sm:translate-x-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                :class="toastType === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+                class="fixed bottom-5 right-5 w-full max-w-xs shadow-lg rounded-lg pointer-events-auto border-2 overflow-hidden z-[9999]"
+            >
+                <div class="p-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <!-- Success Icon -->
+                            <svg x-show="toastType === 'success'" class="h-6 w-6 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <!-- Error Icon -->
+                            <svg x-show="toastType === 'error'" class="h-6 w-6 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3 w-0 flex-1 pt-0.5">
+                            <p :class="toastType === 'success' ? 'text-green-800' : 'text-red-800'" class="text-sm font-medium" x-text="toastMessage"></p>
+                        </div>
+                        <div class="ml-4 flex-shrink-0 flex">
+                            <button @click="toastVisible = false" :class="toastType === 'success' ? 'text-green-400 hover:text-green-500' : 'text-red-400 hover:text-red-500'" class="rounded-md inline-flex focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                <span class="sr-only">Close</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -677,8 +682,9 @@
                 },
 
                 // Toast notification properties
-                showToast: false,
+                toastVisible: false,
                 toastMessage: '',
+                toastType: 'success', // 'success' or 'error'
 
                 getCurrentMonthName() {
                     return this.monthNames[this.selectedDate.getMonth()] + ' ' + this.selectedDate.getFullYear();
@@ -774,7 +780,7 @@
 
                 async addExpense() {
                     if (!this.newExpense.description.trim() || !this.newExpense.amount) {
-                        alert('Please fill in all fields');
+                        this.showToast('Please fill in all fields', 'error');
                         return;
                     }
 
@@ -803,7 +809,8 @@
                         if (!response.ok) {
                             const errorData = await response.json();
                             console.error('Error response:', errorData);
-                            throw new Error('Network response was not ok');
+                            this.showToast('Failed to add expense. Please try again.', 'error');
+                            return;
                         }
 
                         const createdExpense = await response.json();
@@ -817,12 +824,12 @@
                             amount: ''
                         };
                         
-                        this.showSuccessToast('Expense added successfully!');
-                        this.activeTab = 'expenses';
+                        // Show success toast notification
+                        this.showToast('Expense added successfully!', 'success');
 
                     } catch (error) {
                         console.error('There has been a problem with your fetch operation:', error);
-                        alert('Failed to add expense.');
+                        this.showToast('Failed to add expense. Please check your connection.', 'error');
                     }
                 },
 
@@ -908,7 +915,7 @@
 
                 async addExpenseFromModal() {
                     if (!this.modalExpense.description.trim() || !this.modalExpense.amount) {
-                        alert('Please fill in all fields');
+                        this.showToast('Please fill in all fields', 'error');
                         return;
                     }
 
@@ -941,28 +948,32 @@
                         if (!response.ok) {
                             const errorData = await response.json();
                             console.error('Error response:', errorData);
-                            throw new Error('Network response was not ok');
+                            this.showToast('Failed to add expense. Please try again.', 'error');
+                            return;
                         }
 
                         const createdExpense = await response.json();
                         this.expenses.push(createdExpense);
                         
                         this.closeExpenseModal();
-                        this.showSuccessToast('Expense added successfully!');
+                        this.showToast('Expense added successfully!', 'success');
 
                     } catch (error) {
                         console.error('There has been a problem with your fetch operation:', error);
-                        alert('Failed to add expense.');
+                        this.showToast('Failed to add expense. Please check your connection.', 'error');
                     }
                 },
 
-                // Toast notification method
-                showSuccessToast(message) {
-                    this.toastMessage = message;
-                    this.showToast = true;
-                    setTimeout(() => {
-                        this.showToast = false;
-                    }, 3000);
+                // Enhanced Toast notification method
+                showToast(message, type = 'success') {
+                    this.$nextTick(() => {
+                        this.toastMessage = message;
+                        this.toastType = type;
+                        this.toastVisible = true;
+                        setTimeout(() => {
+                            this.toastVisible = false;
+                        }, 4000); // Show for 4 seconds
+                    });
                 },
 
                 // Summary card calculations
