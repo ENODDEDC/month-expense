@@ -49,10 +49,9 @@ COPY --from=build_stage /var/www /var/www
 # Copy Nginx and Supervisor configurations
 COPY docker/default.conf /etc/nginx/http.d/default.conf
 
-# Create a script to start services
-RUN echo '#!/bin/sh' > /usr/local/bin/start-services.sh && \
-    echo 'supervisord -c /etc/supervisord.conf' >> /usr/local/bin/start-services.sh && \
-    chmod +x /usr/local/bin/start-services.sh
+# Copy the start-up script
+COPY docker/start-services.sh /usr/local/bin/start-services.sh
+RUN chmod +x /usr/local/bin/start-services.sh
 
 # Create Supervisor config
 RUN echo '[supervisord]' > /etc/supervisord.conf && \
