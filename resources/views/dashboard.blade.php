@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Dashboard - {{ config('app.name') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -607,29 +608,7 @@
                     PHP: { code: 'PHP', symbol: '₱', name: 'Philippine Peso' }
                 },
                 
-                expenses: [
-                    {
-                        id: 1,
-                        date: '2025-02-01',
-                        category: 'Food',
-                        description: 'Lunch at restaurant',
-                        amount: 25.50
-                    },
-                    {
-                        id: 2,
-                        date: '2025-02-02',
-                        category: 'Transport',
-                        description: 'Gas for car',
-                        amount: 45.00
-                    },
-                    {
-                        id: 3,
-                        date: '2025-02-03',
-                        category: 'Shopping',
-                        description: 'Groceries',
-                        amount: 120.75
-                    }
-                ],
+                expenses: @json($expenses),
                 newExpense: {
                     date: new Date().toISOString().split('T')[0],
                     category: 'Food',
@@ -709,7 +688,11 @@
                     const year = this.selectedDate.getFullYear();
                     const month = this.selectedDate.getMonth();
                     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    return this.expenses.filter(expense => expense.date === dateStr);
+                    return this.expenses.filter(expense => {
+                        // Handle cases where expense.date might include time
+                        const expenseDate = expense.date.split('T')[0];
+                        return expenseDate === dateStr;
+                    });
                 },
 
                 getTotalForDate(day) {
@@ -751,34 +734,58 @@
                     });
                 },
 
-                addExpense() {
+                async addExpense() {
                     if (!this.newExpense.description.trim() || !this.newExpense.amount) {
                         alert('Please fill in all fields');
                         return;
                     }
 
-                    const expense = {
-                        id: Date.now(),
+                    let amountInUSD = parseFloat(this.newExpense.amount);
+                    if (this.currentCurrency.code === 'PHP') {
+                        amountInUSD = amountInUSD / this.exchangeRate;
+                    }
+
+                    const newExpenseData = {
                         date: this.newExpense.date,
                         category: this.newExpense.category,
                         description: this.newExpense.description.trim(),
-                        amount: parseFloat(this.newExpense.amount)
+                        amount: amountInUSD
                     };
-                    
-                    this.expenses.push(expense);
-                    
-                    // Reset form
-                    this.newExpense = {
-                        date: new Date().toISOString().split('T')[0],
-                        category: 'Food',
-                        description: '',
-                        amount: ''
-                    };
-                    
-                    alert('Expense added successfully!');
-                    
-                    // Switch to expenses tab to show the new expense
-                    this.activeTab = 'expenses';
+
+                    try {
+                        const response = await fetch('{{ route('expenses.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify(newExpenseData)
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            console.error('Error response:', errorData);
+                            throw new Error('Network response was not ok');
+                        }
+
+                        const createdExpense = await response.json();
+                        this.expenses.push(createdExpense);
+
+                        // Reset form
+                        this.newExpense = {
+                            date: new Date().toISOString().split('T')[0],
+                            category: 'Food',
+                            description: '',
+                            amount: ''
+                        };
+                        
+                        alert('Expense added successfully!');
+                        this.activeTab = 'expenses';
+
+                    } catch (error) {
+                        console.error('There has been a problem with your fetch operation:', error);
+                        alert('Failed to add expense.');
+                    }
                 },
 
                 applyQuickSuggestion(suggestion) {
@@ -823,11 +830,11 @@
                 },
 
                 formatCurrency(usdAmount) {
+                    if (typeof usdAmount !== 'number') {
+                        usdAmount = parseFloat(usdAmount) || 0;
+                    }
                     const convertedAmount = this.convertCurrency(usdAmount);
-                    const formattedAmount = convertedAmount.toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
+                    const formattedAmount = convertedAmount.toFixed(2);
                     return `${this.currentCurrency.symbol}${formattedAmount}`;
                 },
 
@@ -861,36 +868,54 @@
                     });
                 },
 
-                addExpenseFromModal() {
+                async addExpenseFromModal() {
                     if (!this.modalExpense.description.trim() || !this.modalExpense.amount) {
                         alert('Please fill in all fields');
                         return;
                     }
 
-                    // Create the date string for the selected date
                     const year = this.selectedDate.getFullYear();
                     const month = this.selectedDate.getMonth();
                     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(this.selectedModalDate).padStart(2, '0')}`;
 
-                    // Convert amount to USD if needed (for storage)
                     let amountInUSD = parseFloat(this.modalExpense.amount);
                     if (this.currentCurrency.code === 'PHP') {
                         amountInUSD = amountInUSD / this.exchangeRate;
                     }
 
-                    const expense = {
-                        id: Date.now(),
+                    const newExpenseData = {
                         date: dateStr,
                         category: this.modalExpense.category,
                         description: this.modalExpense.description.trim(),
                         amount: amountInUSD
                     };
-                    
-                    this.expenses.push(expense);
-                    
-                    // Close modal and show success message
-                    this.closeExpenseModal();
-                    alert('Expense added successfully!');
+
+                    try {
+                        const response = await fetch('{{ route('expenses.store') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify(newExpenseData)
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            console.error('Error response:', errorData);
+                            throw new Error('Network response was not ok');
+                        }
+
+                        const createdExpense = await response.json();
+                        this.expenses.push(createdExpense);
+                        
+                        this.closeExpenseModal();
+                        alert('Expense added successfully!');
+
+                    } catch (error) {
+                        console.error('There has been a problem with your fetch operation:', error);
+                        alert('Failed to add expense.');
+                    }
                 }
             }
         }
