@@ -41,7 +41,8 @@ FROM php:8.2-fpm-alpine as production_stage
 WORKDIR /var/www
 
 # Install only necessary production dependencies
-RUN apk --no-cache add nginx supervisor
+RUN apk --no-cache add nginx supervisor postgresql-dev \
+    && docker-php-ext-install pdo pdo_pgsql
 
 # Copy application files from build stage
 COPY --from=build_stage /var/www /var/www
