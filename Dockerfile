@@ -33,7 +33,8 @@ RUN composer install --no-interaction --no-plugins --no-scripts --prefer-dist
 FROM base as build_stage
 COPY --from=composer_stage /var/www/vendor /var/www/vendor
 COPY . .
-RUN php artisan key:generate
+RUN php -r "file_exists('.env') || copy('.env.example', '.env');" \
+    && php artisan key:generate
 
 # ---- Final Production Stage ----
 FROM php:8.2-fpm-alpine as production_stage
