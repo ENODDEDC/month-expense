@@ -377,11 +377,11 @@
                                 <div class="gradient-border-content">
                                     <div class="bg-white rounded-lg p-6 hover:shadow-lg transition-all duration-300 transform hover:scale-102">
                                         <div class="flex justify-between items-start">
-                                            <div class="flex items-center">
+                                            <div class="flex items-center flex-1">
                                                 <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mr-4">
                                                     <span class="text-2xl" x-text="getCategoryIcon(expense.category)"></span>
                                                 </div>
-                                                <div>
+                                                <div class="flex-1">
                                                     <h4 class="font-bold text-gray-900 text-lg" x-text="expense.description"></h4>
                                                     <p class="text-sm text-gray-500 flex items-center">
                                                         <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
@@ -389,9 +389,32 @@
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div class="text-right">
-                                                <p class="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent" x-text="formatCurrency(expense.amount)"></p>
-                                                <p class="text-xs text-gray-400">Amount</p>
+                                            <div class="flex items-center space-x-4">
+                                                <div class="text-right">
+                                                    <p class="text-2xl font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent" x-text="formatCurrency(expense.amount)"></p>
+                                                    <p class="text-xs text-gray-400">Amount</p>
+                                                </div>
+                                                <!-- Action Buttons -->
+                                                <div class="flex space-x-2">
+                                                    <button
+                                                        @click="openEditModal(expense)"
+                                                        class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                                                        title="Edit expense"
+                                                    >
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button
+                                                        @click="confirmDelete(expense)"
+                                                        class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                                        title="Delete expense"
+                                                    >
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -631,6 +654,171 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Edit Expense Modal -->
+            <div x-show="showEditModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]" @click="closeEditModal()">
+                <div @click.stop class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-hidden">
+                    <!-- Modal Header -->
+                    <div class="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-bold">Edit Expense</h2>
+                                <p class="text-blue-100 mt-1">Update your expense details</p>
+                            </div>
+                            <button @click="closeEditModal()" class="text-white hover:text-blue-200 transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Modal Content -->
+                    <div class="p-6">
+                        <form @submit.prevent="updateExpense()" class="space-y-4">
+                            <!-- Date Input -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                                <input
+                                    type="date"
+                                    x-model="editExpense.date"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                                    required
+                                />
+                            </div>
+
+                            <!-- Category Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-3">Category</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <template x-for="category in categories">
+                                        <label
+                                            :class="editExpense.category === category.value ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'"
+                                            class="relative flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all"
+                                        >
+                                            <input
+                                                type="radio"
+                                                x-model="editExpense.category"
+                                                :value="category.value"
+                                                class="sr-only"
+                                            />
+                                            <span class="text-2xl mb-1" x-text="category.icon"></span>
+                                            <span class="text-xs font-medium text-gray-700 text-center" x-text="category.value"></span>
+                                            <div x-show="editExpense.category === category.value" class="absolute top-1 right-1">
+                                                <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </label>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Description Input -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <input
+                                    type="text"
+                                    x-model="editExpense.description"
+                                    placeholder="e.g., Lunch at restaurant, Gas for car..."
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                                    required
+                                />
+                            </div>
+
+                            <!-- Amount Input -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="'Amount (' + currentCurrency.symbol + ')'"></label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 text-lg" x-text="currentCurrency.symbol"></span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        x-model="editExpense.amount"
+                                        placeholder="0.00"
+                                        class="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <!-- Submit Buttons -->
+                            <div class="flex space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    @click="closeEditModal()"
+                                    class="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    class="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-600 hover:to-indigo-600 transition-all duration-200"
+                                >
+                                    Update Expense
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete Confirmation Modal -->
+            <div x-show="showDeleteModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]" @click="closeDeleteModal()">
+                <div @click.stop class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+                    <!-- Modal Header -->
+                    <div class="bg-gradient-to-r from-red-500 to-pink-500 text-white p-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-bold">Delete Expense</h2>
+                                <p class="text-red-100 mt-1">This action cannot be undone</p>
+                            </div>
+                            <button @click="closeDeleteModal()" class="text-white hover:text-red-200 transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Modal Content -->
+                    <div class="p-6">
+                        <div class="text-center mb-6">
+                            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Are you sure you want to delete this expense?</h3>
+                            <div x-show="expenseToDelete" class="bg-gray-50 rounded-lg p-4 mb-4">
+                                <p class="font-semibold text-gray-800" x-text="expenseToDelete?.description"></p>
+                                <p class="text-sm text-gray-600" x-text="expenseToDelete?.category + ' • ' + formatDate(expenseToDelete?.date)"></p>
+                                <p class="text-lg font-bold text-red-600" x-text="formatCurrency(expenseToDelete?.amount)"></p>
+                            </div>
+                            <p class="text-sm text-gray-500">This expense will be permanently removed from your records.</p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-3">
+                            <button
+                                @click="closeDeleteModal()"
+                                class="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                @click="deleteExpense()"
+                                class="flex-1 bg-gradient-to-r from-red-500 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-red-600 hover:to-pink-600 transition-all duration-200"
+                            >
+                                Delete Expense
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
  <script>
@@ -680,6 +868,18 @@
                     description: '',
                     amount: ''
                 },
+
+                // Edit/Delete modal properties
+                showEditModal: false,
+                showDeleteModal: false,
+                editExpense: {
+                    id: null,
+                    date: '',
+                    category: 'Food',
+                    description: '',
+                    amount: ''
+                },
+                expenseToDelete: null,
 
                 // Toast notification properties
                 toastVisible: false,
@@ -996,6 +1196,122 @@
                             this.toastVisible = false;
                         }, 4000); // Show for 4 seconds
                     });
+                },
+
+                // Edit expense functionality
+                openEditModal(expense) {
+                    this.editExpense = {
+                        id: expense.id,
+                        date: expense.date.split('T')[0], // Format date for input
+                        category: expense.category,
+                        description: expense.description,
+                        amount: this.convertCurrency(expense.amount).toFixed(2) // Convert to current currency
+                    };
+                    this.showEditModal = true;
+                },
+
+                closeEditModal() {
+                    this.showEditModal = false;
+                    this.editExpense = {
+                        id: null,
+                        date: '',
+                        category: 'Food',
+                        description: '',
+                        amount: ''
+                    };
+                },
+
+                async updateExpense() {
+                    if (!this.editExpense.description.trim() || !this.editExpense.amount) {
+                        this.showToast('Please fill in all fields', 'error');
+                        return;
+                    }
+
+                    let amountInUSD = parseFloat(this.editExpense.amount);
+                    if (this.currentCurrency.code === 'PHP') {
+                        amountInUSD = amountInUSD / this.exchangeRate;
+                    }
+
+                    const updatedExpenseData = {
+                        date: this.editExpense.date,
+                        category: this.editExpense.category,
+                        description: this.editExpense.description.trim(),
+                        amount: amountInUSD
+                    };
+
+                    try {
+                        const response = await fetch(`/expenses/${this.editExpense.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify(updatedExpenseData)
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            console.error('Error response:', errorData);
+                            this.showToast('Failed to update expense. Please try again.', 'error');
+                            return;
+                        }
+
+                        const updatedExpense = await response.json();
+                        
+                        // Update the expense in the local array
+                        const index = this.expenses.findIndex(e => e.id === this.editExpense.id);
+                        if (index !== -1) {
+                            this.expenses[index] = updatedExpense;
+                        }
+
+                        this.closeEditModal();
+                        this.showToast('Expense updated successfully!', 'success');
+
+                    } catch (error) {
+                        console.error('There has been a problem with your fetch operation:', error);
+                        this.showToast('Failed to update expense. Please check your connection.', 'error');
+                    }
+                },
+
+                // Delete expense functionality
+                confirmDelete(expense) {
+                    this.expenseToDelete = expense;
+                    this.showDeleteModal = true;
+                },
+
+                closeDeleteModal() {
+                    this.showDeleteModal = false;
+                    this.expenseToDelete = null;
+                },
+
+                async deleteExpense() {
+                    if (!this.expenseToDelete) return;
+
+                    try {
+                        const response = await fetch(`/expenses/${this.expenseToDelete.id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            console.error('Error response:', errorData);
+                            this.showToast('Failed to delete expense. Please try again.', 'error');
+                            return;
+                        }
+
+                        // Remove the expense from the local array
+                        this.expenses = this.expenses.filter(e => e.id !== this.expenseToDelete.id);
+
+                        this.closeDeleteModal();
+                        this.showToast('Expense deleted successfully!', 'success');
+
+                    } catch (error) {
+                        console.error('There has been a problem with your fetch operation:', error);
+                        this.showToast('Failed to delete expense. Please check your connection.', 'error');
+                    }
                 },
 
                 // Summary card calculations

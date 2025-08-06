@@ -22,3 +22,5 @@ Route::post('/register', [RegisterController::class, 'register']);
 // Protected Routes
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('auth');
 Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store')->middleware('auth');
+Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update')->middleware('auth');
+Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy')->middleware('auth');

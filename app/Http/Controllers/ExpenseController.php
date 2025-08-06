@@ -24,4 +24,41 @@ class ExpenseController extends Controller
 
         return response()->json($expense, 201);
     }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Expense $expense)
+    {
+        // Ensure the expense belongs to the authenticated user
+        if ($expense->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'category' => 'required|string|max:255',
+            'description' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+        ]);
+
+        $expense->update($validated);
+
+        return response()->json($expense, 200);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Expense $expense)
+    {
+        // Ensure the expense belongs to the authenticated user
+        if ($expense->user_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $expense->delete();
+
+        return response()->json(['message' => 'Expense deleted successfully'], 200);
+    }
 }
