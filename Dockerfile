@@ -1,10 +1,8 @@
-# Use a specific PHP version. Render recommends -fpm variants.
-FROM php:8.2-fpm
-
-# Set the working directory
+# ---- Base PHP Stage ----
+FROM php:8.2-fpm as base
 WORKDIR /var/www
 
-# Install system dependencies required by Laravel and common extensions
+# Install base dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpng-dev \
@@ -25,28 +23,50 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath zip
 
-# Install Composer
+# ---- Composer Stage ----
+FROM base as composer_stage
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --no-plugins --no-scripts --prefer-dist
 
-# Copy the application source code
+# ---- Application Build Stage ----
+FROM base as build_stage
+COPY --from=composer_stage /var/www/vendor /var/www/vendor
 COPY . .
-
-# Render will inject environment variables, but we need a file for artisan commands during the build.
-# This command copies .env.example to .env if .env does not exist.
-RUN php -r "file_exists('.env') || copy('.env.example', '.env');"
-
-# Install composer dependencies
-RUN composer install --no-interaction --optimize-autoloader --no-dev
-
-# Generate an application key
-# Generate an application key
 RUN php artisan key:generate
 
-# Set permissions for storage and cache
-RUN chown -R www-data:www-data storage bootstrap/cache
+# ---- Final Production Stage ----
+FROM php:8.2-fpm-alpine as production_stage
+WORKDIR /var/www
 
-# Expose port 8000 for the web server
-EXPOSE 8000
+# Install only necessary production dependencies
+RUN apk --no-cache add nginx supervisor
 
-# The command to run when the container starts
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Copy application files from build stage
+COPY --from=build_stage /var/www /var/www
+
+# Copy Nginx and Supervisor configurations
+COPY docker/default.conf /etc/nginx/http.d/default.conf
+
+# Create a script to start services
+RUN echo '#!/bin/sh' > /usr/local/bin/start-services.sh && \
+    echo 'supervisord -c /etc/supervisord.conf' >> /usr/local/bin/start-services.sh && \
+    chmod +x /usr/local/bin/start-services.sh
+
+# Create Supervisor config
+RUN echo '[supervisord]' > /etc/supervisord.conf && \
+    echo 'nodaemon=true' >> /etc/supervisord.conf && \
+    echo '' >> /etc/supervisord.conf && \
+    echo '[program:nginx]' >> /etc/supervisord.conf && \
+    echo 'command=/usr/sbin/nginx -g "daemon off;"' >> /etc/supervisord.conf && \
+    echo '' >> /etc/supervisord.conf && \
+    echo '[program:php-fpm]' >> /etc/supervisord.conf && \
+    echo 'command=/usr/local/sbin/php-fpm' >> /etc/supervisord.conf
+
+# Set permissions
+RUN chown -R www-data:www-data /var/www && \
+    chmod -R 775 /var/www/storage
+
+EXPOSE 80
+
+CMD ["/usr/local/bin/start-services.sh"]
