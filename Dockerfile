@@ -39,10 +39,8 @@ RUN php -r "file_exists('.env') || copy('.env.example', '.env');"
 RUN composer install --no-interaction --optimize-autoloader --no-dev
 
 # Generate an application key
-# Generate an application key and cache config
-RUN php artisan key:generate \
-    && php artisan config:clear \
-    && php artisan config:cache
+# Generate an application key
+RUN php artisan key:generate
 
 # Set permissions for storage and cache
 RUN chown -R www-data:www-data storage bootstrap/cache
