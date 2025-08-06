@@ -536,7 +536,7 @@
                         <div class="gradient-border-content">
                             <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg text-center">
                                 <div class="text-4xl mb-3">📈</div>
-                                <p class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2" x-text="formatCurrency(getCurrentMonthTotal() / new Date().getDate())"></p>
+                                <p class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2" x-text="formatCurrency(dailyAverage())"></p>
                                 <p class="text-gray-600 font-medium">Daily Average</p>
                                 <p class="text-sm text-gray-500 mt-1">Based on current month</p>
                             </div>
@@ -548,7 +548,7 @@
                         <div class="gradient-border-content">
                             <div class="bg-gradient-to-br from-purple-50 to-violet-50 p-6 rounded-lg text-center">
                                 <div class="text-4xl mb-3">🎯</div>
-                                <p class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mb-2" x-text="formatCurrency(Math.max(...getMonthlyExpenses().map(e => e.amount)))"></p>
+                                <p class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mb-2" x-text="formatCurrency(largestExpense())"></p>
                                 <p class="text-gray-600 font-medium">Largest Expense</p>
                                 <p class="text-sm text-gray-500 mt-1">Single transaction</p>
                             </div>
@@ -593,7 +593,41 @@
         </div>
     </div>
         </div>
-    </div>   
+    </div>
+
+    <!-- Notification Toast -->
+    <div
+        x-show="showToast"
+        x-cloak
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="transform translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+        x-transition:enter-end="transform translate-y-0 opacity-100 sm:translate-x-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed bottom-5 right-5 w-full max-w-xs bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden z-50"
+    >
+        <div class="p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-6 w-6 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <p class="text-sm font-medium text-gray-900" x-text="toastMessage"></p>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button @click="showToast = false" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <span class="sr-only">Close</span>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
  <script>
         function expenseTracker() {
             return {
@@ -641,6 +675,10 @@
                     description: '',
                     amount: ''
                 },
+
+                // Toast notification properties
+                showToast: false,
+                toastMessage: '',
 
                 getCurrentMonthName() {
                     return this.monthNames[this.selectedDate.getMonth()] + ' ' + this.selectedDate.getFullYear();
@@ -697,7 +735,7 @@
 
                 getTotalForDate(day) {
                     const dayExpenses = this.getExpensesForDate(day);
-                    return dayExpenses.reduce((total, expense) => total + expense.amount, 0);
+                    return dayExpenses.reduce((total, expense) => total + parseFloat(expense.amount || 0), 0);
                 },
 
                 getMonthlyExpenses() {
@@ -710,7 +748,7 @@
                 },
 
                 getCurrentMonthTotal() {
-                    return this.getMonthlyExpenses().reduce((total, expense) => total + expense.amount, 0);
+                    return this.getMonthlyExpenses().reduce((total, expense) => total + parseFloat(expense.amount || 0), 0);
                 },
 
                 getCategoryIcon(category) {
@@ -779,7 +817,7 @@
                             amount: ''
                         };
                         
-                        alert('Expense added successfully!');
+                        this.showSuccessToast('Expense added successfully!');
                         this.activeTab = 'expenses';
 
                     } catch (error) {
@@ -910,12 +948,44 @@
                         this.expenses.push(createdExpense);
                         
                         this.closeExpenseModal();
-                        alert('Expense added successfully!');
+                        this.showSuccessToast('Expense added successfully!');
 
                     } catch (error) {
                         console.error('There has been a problem with your fetch operation:', error);
                         alert('Failed to add expense.');
                     }
+                },
+
+                // Toast notification method
+                showSuccessToast(message) {
+                    this.toastMessage = message;
+                    this.showToast = true;
+                    setTimeout(() => {
+                        this.showToast = false;
+                    }, 3000);
+                },
+
+                // Summary card calculations
+                dailyAverage() {
+                    const total = this.getCurrentMonthTotal();
+                    const expenses = this.getMonthlyExpenses();
+                    if (expenses.length === 0) return 0;
+
+                    const today = new Date();
+                    const year = this.selectedDate.getFullYear();
+                    const month = this.selectedDate.getMonth();
+                    
+                    let daysInMonthSoFar = new Date(year, month + 1, 0).getDate();
+                    
+                    if (today.getFullYear() === year && today.getMonth() === month) {
+                        daysInMonthSoFar = today.getDate();
+                    }
+                    
+                    return daysInMonthSoFar > 0 ? total / daysInMonthSoFar : 0;
+                },
+                largestExpense() {
+                    const amounts = this.getMonthlyExpenses().map(e => parseFloat(e.amount || 0));
+                    return amounts.length > 0 ? Math.max(...amounts) : 0;
                 }
             }
         }
