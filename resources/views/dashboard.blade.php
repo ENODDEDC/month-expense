@@ -107,15 +107,36 @@
                                         @endauth
                                     </div>
                                     
-                                    <!-- Stats Grid -->
+                                    <!-- Stats Grid with Budget -->
                                     <div class="grid grid-cols-2 gap-4 animate-bounce-in">
                                         <div class="glass-effect rounded-lg p-4 text-center">
                                             <div class="text-2xl font-bold" x-text="formatCurrency(getCurrentMonthTotal())"></div>
                                             <div class="text-xs text-blue-200">This Month</div>
+                                            <!-- Budget Progress -->
+                                            <div x-show="monthlyBudget > 0" class="mt-2">
+                                                <div class="w-full bg-white/20 rounded-full h-1">
+                                                    <div 
+                                                        class="h-1 rounded-full transition-all duration-500"
+                                                        :class="getBudgetProgress().isOverBudget ? 'bg-red-400' : 'bg-green-400'"
+                                                        :style="'width: ' + Math.min(getBudgetProgress().percentage, 100) + '%'"
+                                                    ></div>
+                                                </div>
+                                                <div class="text-xs mt-1" :class="getBudgetProgress().isOverBudget ? 'text-red-200' : 'text-green-200'">
+                                                    <span x-text="getBudgetProgress().percentage.toFixed(0) + '% of budget'"></span>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="glass-effect rounded-lg p-4 text-center">
                                             <div class="text-2xl font-bold" x-text="getMonthlyExpenses().length"></div>
                                             <div class="text-xs text-blue-200">Expenses</div>
+                                            <!-- Budget Button -->
+                                            <button 
+                                                @click="setBudget()"
+                                                class="mt-2 text-xs text-blue-200 hover:text-white transition-colors"
+                                            >
+                                                <span x-show="!monthlyBudget || monthlyBudget <= 0">Set Budget</span>
+                                                <span x-show="monthlyBudget && monthlyBudget > 0" x-text="'Budget: ' + formatBudgetAmount(monthlyBudget)"></span>
+                                            </button>
                                         </div>
                                     </div>
                                     
@@ -347,6 +368,86 @@
 
             <!-- Expenses Tab -->
             <div x-show="activeTab === 'expenses'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" class="p-8">
+                <!-- Search and Filter Bar -->
+                <div x-show="getMonthlyExpenses().length > 0" class="mb-6">
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <!-- Search Input -->
+                            <div class="flex-1">
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        x-model="searchQuery"
+                                        placeholder="Search expenses..."
+                                        class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <!-- Category Filter -->
+                            <div class="md:w-48">
+                                <select x-model="selectedCategory" class="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="all">All Categories</option>
+                                    <template x-for="category in categories">
+                                        <option :value="category.value" x-text="category.icon + ' ' + category.value"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            
+                            <!-- Filter Toggle -->
+                            <button
+                                @click="showFilters = !showFilters"
+                                :class="showFilters ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'"
+                                class="px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z" />
+                                </svg>
+                                <span>Filters</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Advanced Filters -->
+                        <div x-show="showFilters" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" class="mt-4 pt-4 border-t border-gray-200">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Date Range -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                                    <div class="flex space-x-2">
+                                        <input
+                                            type="date"
+                                            x-model="dateRange.start"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Start date"
+                                        />
+                                        <input
+                                            type="date"
+                                            x-model="dateRange.end"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="End date"
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <!-- Clear Filters -->
+                                <div class="flex items-end">
+                                    <button
+                                        @click="clearFilters()"
+                                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                                    >
+                                        Clear Filters
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div x-show="getMonthlyExpenses().length === 0">
                     <div class="text-center py-12">
                         <div class="text-6xl mb-4">💸</div>
@@ -372,7 +473,7 @@
 
                     <!-- Enhanced Expenses List -->
                     <div class="space-y-4">
-                        <template x-for="expense in getMonthlyExpenses().sort((a, b) => new Date(b.date) - new Date(a.date))">
+                        <template x-for="expense in getFilteredExpenses()"
                             <div class="gradient-border animate-slide-up">
                                 <div class="gradient-border-content">
                                     <div class="bg-white rounded-lg p-6 hover:shadow-lg transition-all duration-300 transform hover:scale-102">
@@ -396,6 +497,15 @@
                                                 </div>
                                                 <!-- Action Buttons -->
                                                 <div class="flex space-x-2">
+                                                    <button
+                                                        @click="duplicateExpense(expense)"
+                                                        class="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-all duration-200"
+                                                        title="Duplicate expense"
+                                                    >
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                        </svg>
+                                                    </button>
                                                     <button
                                                         @click="openEditModal(expense)"
                                                         class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-all duration-200"
@@ -530,6 +640,26 @@
                             </template>
                         </div>
                     </div>
+
+                    <!-- Keyboard Shortcuts Help -->
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h3 class="text-sm font-medium text-blue-800 mb-3 flex items-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Keyboard Shortcuts
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-700">
+                            <div class="flex justify-between">
+                                <span>New Expense:</span>
+                                <kbd class="px-2 py-1 bg-blue-100 rounded text-xs">Ctrl + N</kbd>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Search Expenses:</span>
+                                <kbd class="px-2 py-1 bg-blue-100 rounded text-xs">Ctrl + F</kbd>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -539,6 +669,53 @@
                     <div class="text-6xl mb-4 animate-pulse-slow">📊</div>
                     <h2 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent mb-2">Monthly Summary</h2>
                     <p class="text-gray-600 text-lg">Your financial overview for <span x-text="getCurrentMonthName()"></span></p>
+                </div>
+
+                <!-- Smart Insights -->
+                <div x-show="getMonthlyExpenses().length > 0" class="mb-8">
+                    <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-6 border border-purple-200">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                            <span class="text-2xl mr-3">🧠</span>
+                            Smart Insights
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <!-- Top Category -->
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="flex items-center mb-2">
+                                    <span class="text-lg mr-2">🏆</span>
+                                    <span class="font-medium text-gray-700">Top Category</span>
+                                </div>
+                                <p class="text-gray-600" x-text="getTopCategory()"></p>
+                            </div>
+                            
+                            <!-- Average Transaction -->
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="flex items-center mb-2">
+                                    <span class="text-lg mr-2">💰</span>
+                                    <span class="font-medium text-gray-700">Avg Transaction</span>
+                                </div>
+                                <p class="text-gray-600" x-text="formatCurrency(getAverageTransaction())"></p>
+                            </div>
+                            
+                            <!-- Budget Status -->
+                            <div x-show="monthlyBudget > 0" class="bg-white rounded-lg p-4">
+                                <div class="flex items-center mb-2">
+                                    <span class="text-lg mr-2" x-text="getBudgetProgress().isOverBudget ? '⚠️' : '✅'"></span>
+                                    <span class="font-medium text-gray-700">Budget Status</span>
+                                </div>
+                                <p class="text-gray-600" x-text="getBudgetProgress().isOverBudget ? 'Over budget by ' + formatBudgetAmount(getBudgetProgress().spent - monthlyBudget) : 'Under budget by ' + formatBudgetAmount(getBudgetProgress().remaining)"></p>
+                            </div>
+                            
+                            <!-- Spending Trend -->
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="flex items-center mb-2">
+                                    <span class="text-lg mr-2">📈</span>
+                                    <span class="font-medium text-gray-700">This Week</span>
+                                </div>
+                                <p class="text-gray-600" x-text="formatCurrency(getWeeklySpending()) + ' spent'"></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Enhanced Summary Cards -->
@@ -819,6 +996,84 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Budget Modal -->
+            <div x-show="showBudgetModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9998]" @click="showBudgetModal = false">
+                <div @click.stop class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+                    <!-- Modal Header -->
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-6">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-2xl font-bold">Set Monthly Budget</h2>
+                                <p class="text-green-100 mt-1">Track your spending goals</p>
+                            </div>
+                            <button @click="showBudgetModal = false" class="text-white hover:text-green-200 transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Modal Content -->
+                    <div class="p-6">
+                        <form @submit.prevent="saveBudget()" class="space-y-4">
+                            <!-- Budget Amount -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2" x-text="'Monthly Budget (' + currentCurrency.symbol + ')'"></label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 text-lg" x-text="currentCurrency.symbol"></span>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        x-model="monthlyBudget"
+                                        placeholder="0.00"
+                                        class="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                                        required
+                                    />
+                                </div>
+                                <p class="text-sm text-gray-500 mt-2">Set your monthly spending limit to track your budget progress.</p>
+                            </div>
+
+                            <!-- Current Progress -->
+                            <div x-show="monthlyBudget > 0" class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="font-medium text-gray-800 mb-2">Current Month Progress</h4>
+                                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                    <span>Spent: <span x-text="formatBudgetAmount(getBudgetProgress().spent)"></span></span>
+                                    <span>Remaining: <span x-text="formatBudgetAmount(getBudgetProgress().remaining)"></span></span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                        class="h-2 rounded-full transition-all duration-500"
+                                        :class="(getCurrentMonthTotal() / monthlyBudget * 100) > 100 ? 'bg-red-500' : 'bg-green-500'"
+                                        :style="'width: ' + Math.min((getCurrentMonthTotal() / monthlyBudget * 100), 100) + '%'"
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Buttons -->
+                            <div class="flex space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    @click="showBudgetModal = false"
+                                    class="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    class="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 px-4 rounded-lg font-medium hover:from-green-600 hover:to-emerald-600 transition-all duration-200"
+                                >
+                                    Save Budget
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
  <script>
@@ -880,6 +1135,25 @@
                     amount: ''
                 },
                 expenseToDelete: null,
+
+                // Search & Filter properties
+                searchQuery: '',
+                selectedCategory: 'all',
+                dateRange: { start: '', end: '' },
+                showFilters: false,
+
+                // Budget Management properties
+                monthlyBudget: 0,
+                categoryBudgets: {},
+                showBudgetModal: false,
+
+                // Theme properties
+                currentTheme: 'light',
+                
+                // Custom categories
+                customCategories: [],
+                showCategoryModal: false,
+                newCategory: { name: '', icon: '📝', color: 'bg-gray-100' },
 
                 // Toast notification properties
                 toastVisible: false,
@@ -1043,6 +1317,12 @@
                 async init() {
                     await this.fetchExchangeRate();
                     this.loadCurrencyPreference();
+                    // Load budget after currency and exchange rate are set
+                    this.loadBudget();
+                    this.loadTheme();
+                    
+                    // Add keyboard shortcuts
+                    document.addEventListener('keydown', this.handleKeyboardShortcuts.bind(this));
                 },
 
                 // Load saved currency preference from localStorage
@@ -1076,9 +1356,26 @@
                 },
 
                 switchCurrency() {
+                    const oldCurrency = this.currentCurrency.code;
                     this.currentCurrency = this.currentCurrency.code === 'USD' 
                         ? this.currencies.PHP 
                         : this.currencies.USD;
+                    
+                    // Convert existing budget to new currency
+                    if (this.monthlyBudget > 0) {
+                        if (oldCurrency === 'USD' && this.currentCurrency.code === 'PHP') {
+                            this.monthlyBudget = this.monthlyBudget * this.exchangeRate;
+                        } else if (oldCurrency === 'PHP' && this.currentCurrency.code === 'USD') {
+                            this.monthlyBudget = this.monthlyBudget / this.exchangeRate;
+                        }
+                        
+                        // Save the converted budget
+                        const budgetData = {
+                            amount: this.monthlyBudget,
+                            currency: this.currentCurrency.code
+                        };
+                        localStorage.setItem('expense_tracker_budget', JSON.stringify(budgetData));
+                    }
                     
                     // Save the new currency preference
                     this.saveCurrencyPreference();
@@ -1103,6 +1400,24 @@
                     const convertedAmount = this.convertCurrency(usdAmount);
                     const formattedAmount = convertedAmount.toFixed(2);
                     return `${this.currentCurrency.symbol}${formattedAmount}`;
+                },
+
+                // Format budget amounts (already in current currency, no conversion needed)
+                formatBudgetAmount(amount) {
+                    if (typeof amount !== 'number') {
+                        amount = parseFloat(amount) || 0;
+                    }
+                    const formattedAmount = amount.toFixed(2);
+                    return `${this.currentCurrency.symbol}${formattedAmount}`;
+                },
+
+                // Debug function to check budget values
+                debugBudget() {
+                    console.log('Current Currency:', this.currentCurrency.code);
+                    console.log('Monthly Budget:', this.monthlyBudget);
+                    console.log('Exchange Rate:', this.exchangeRate);
+                    const savedBudget = localStorage.getItem('expense_tracker_budget');
+                    console.log('Saved Budget:', savedBudget);
                 },
 
                 // Modal functionality
@@ -1196,6 +1511,192 @@
                             this.toastVisible = false;
                         }, 4000); // Show for 4 seconds
                     });
+                },
+
+                // Search & Filter functionality
+                getFilteredExpenses() {
+                    let filtered = this.getMonthlyExpenses();
+                    
+                    // Search filter
+                    if (this.searchQuery.trim()) {
+                        filtered = filtered.filter(expense => 
+                            expense.description.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                            expense.category.toLowerCase().includes(this.searchQuery.toLowerCase())
+                        );
+                    }
+                    
+                    // Category filter
+                    if (this.selectedCategory !== 'all') {
+                        filtered = filtered.filter(expense => expense.category === this.selectedCategory);
+                    }
+                    
+                    // Date range filter
+                    if (this.dateRange.start) {
+                        filtered = filtered.filter(expense => expense.date >= this.dateRange.start);
+                    }
+                    if (this.dateRange.end) {
+                        filtered = filtered.filter(expense => expense.date <= this.dateRange.end);
+                    }
+                    
+                    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+                },
+
+                clearFilters() {
+                    this.searchQuery = '';
+                    this.selectedCategory = 'all';
+                    this.dateRange = { start: '', end: '' };
+                    this.showFilters = false;
+                },
+
+                // Budget Management functionality - SIMPLIFIED VERSION
+                getBudgetProgress() {
+                    const spentInUSD = this.getCurrentMonthTotal();
+                    const spentInCurrentCurrency = this.convertCurrency(spentInUSD);
+                    
+                    const percentage = this.monthlyBudget > 0 ? (spentInCurrentCurrency / this.monthlyBudget) * 100 : 0;
+                    return { 
+                        spent: spentInCurrentCurrency, 
+                        percentage: Math.min(percentage, 100), 
+                        remaining: Math.max(this.monthlyBudget - spentInCurrentCurrency, 0),
+                        isOverBudget: spentInCurrentCurrency > this.monthlyBudget && this.monthlyBudget > 0
+                    };
+                },
+
+                setBudget() {
+                    this.showBudgetModal = true;
+                },
+
+                saveBudget() {
+                    // Convert to number to ensure proper comparison
+                    const budgetAmount = parseFloat(this.monthlyBudget) || 0;
+                    
+                    console.log('=== SAVE BUDGET DEBUG ===');
+                    console.log('Original monthlyBudget:', this.monthlyBudget);
+                    console.log('Parsed budgetAmount:', budgetAmount);
+                    console.log('Current Currency:', this.currentCurrency.code);
+                    
+                    if (budgetAmount >= 0) {
+                        // Save budget with currency information
+                        const budgetData = {
+                            amount: budgetAmount,
+                            currency: this.currentCurrency.code
+                        };
+                        localStorage.setItem('expense_tracker_budget', JSON.stringify(budgetData));
+                        
+                        // Update the local variable with the parsed number
+                        this.monthlyBudget = budgetAmount;
+                        
+                        console.log('Budget saved:', budgetData);
+                        console.log('Updated monthlyBudget:', this.monthlyBudget);
+                        console.log('========================');
+                        
+                        this.showBudgetModal = false;
+                        this.showToast('Budget updated successfully!', 'success');
+                    }
+                },
+
+                loadBudget() {
+                    const savedBudget = localStorage.getItem('expense_tracker_budget');
+                    if (savedBudget) {
+                        try {
+                            const budgetData = JSON.parse(savedBudget);
+                            if (budgetData.currency && budgetData.amount !== undefined) {
+                                // Check if the saved budget currency matches current currency
+                                if (budgetData.currency === this.currentCurrency.code) {
+                                    // Same currency, use as-is - NO CONVERSION
+                                    this.monthlyBudget = budgetData.amount;
+                                } else {
+                                    // Different currency, convert it
+                                    if (budgetData.currency === 'USD' && this.currentCurrency.code === 'PHP') {
+                                        this.monthlyBudget = budgetData.amount * this.exchangeRate;
+                                    } else if (budgetData.currency === 'PHP' && this.currentCurrency.code === 'USD') {
+                                        this.monthlyBudget = budgetData.amount / this.exchangeRate;
+                                    } else {
+                                        this.monthlyBudget = budgetData.amount;
+                                    }
+                                }
+                            } else {
+                                // Legacy format - treat as current currency, NO CONVERSION
+                                this.monthlyBudget = parseFloat(savedBudget);
+                            }
+                        } catch (e) {
+                            // Legacy format - treat as current currency, NO CONVERSION
+                            this.monthlyBudget = parseFloat(savedBudget);
+                        }
+                    }
+                },
+
+                // Theme functionality
+                toggleTheme() {
+                    this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+                    localStorage.setItem('expense_tracker_theme', this.currentTheme);
+                    this.applyTheme();
+                },
+
+                applyTheme() {
+                    if (this.currentTheme === 'dark') {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                },
+
+                loadTheme() {
+                    const savedTheme = localStorage.getItem('expense_tracker_theme');
+                    if (savedTheme) {
+                        this.currentTheme = savedTheme;
+                        this.applyTheme();
+                    }
+                },
+
+                // Recurring expenses functionality
+                addRecurringExpense(expense) {
+                    const recurring = JSON.parse(localStorage.getItem('expense_tracker_recurring') || '[]');
+                    recurring.push({
+                        ...expense,
+                        id: Date.now(),
+                        nextDate: this.getNextRecurringDate(expense.frequency)
+                    });
+                    localStorage.setItem('expense_tracker_recurring', JSON.stringify(recurring));
+                },
+
+                getNextRecurringDate(frequency) {
+                    const today = new Date();
+                    switch(frequency) {
+                        case 'daily': return new Date(today.setDate(today.getDate() + 1));
+                        case 'weekly': return new Date(today.setDate(today.getDate() + 7));
+                        case 'monthly': return new Date(today.setMonth(today.getMonth() + 1));
+                        default: return new Date(today.setDate(today.getDate() + 1));
+                    }
+                },
+
+                // Quick actions
+                duplicateExpense(expense) {
+                    this.newExpense = {
+                        date: new Date().toISOString().split('T')[0],
+                        category: expense.category,
+                        description: expense.description + ' (Copy)',
+                        amount: this.convertCurrency(expense.amount).toFixed(2)
+                    };
+                    this.activeTab = 'add';
+                    this.showToast('Expense duplicated! Edit and save.', 'success');
+                },
+
+                // Keyboard shortcuts
+                handleKeyboardShortcuts(event) {
+                    if (event.ctrlKey || event.metaKey) {
+                        switch(event.key) {
+                            case 'n':
+                                event.preventDefault();
+                                this.activeTab = 'add';
+                                break;
+                            case 'f':
+                                event.preventDefault();
+                                this.activeTab = 'expenses';
+                                this.showFilters = true;
+                                break;
+                        }
+                    }
                 },
 
                 // Edit expense functionality
@@ -1332,9 +1833,117 @@
                     
                     return daysInMonthSoFar > 0 ? total / daysInMonthSoFar : 0;
                 },
+                
                 largestExpense() {
                     const amounts = this.getMonthlyExpenses().map(e => parseFloat(e.amount || 0));
                     return amounts.length > 0 ? Math.max(...amounts) : 0;
+                },
+
+                // Smart Insights functions
+                getTopCategory() {
+                    const expenses = this.getMonthlyExpenses();
+                    if (expenses.length === 0) return 'No expenses yet';
+                    
+                    const categoryTotals = {};
+                    expenses.forEach(expense => {
+                        categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + parseFloat(expense.amount);
+                    });
+                    
+                    const topCategory = Object.keys(categoryTotals).reduce((a, b) => 
+                        categoryTotals[a] > categoryTotals[b] ? a : b
+                    );
+                    
+                    const categoryIcon = this.getCategoryIcon(topCategory);
+                    const amount = this.formatCurrency(categoryTotals[topCategory]);
+                    return `${categoryIcon} ${topCategory} (${amount})`;
+                },
+
+                getAverageTransaction() {
+                    const expenses = this.getMonthlyExpenses();
+                    if (expenses.length === 0) return 0;
+                    
+                    const total = expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+                    return total / expenses.length;
+                },
+
+                getWeeklySpending() {
+                    const oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    
+                    const weeklyExpenses = this.expenses.filter(expense => {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate >= oneWeekAgo;
+                    });
+                    
+                    return weeklyExpenses.reduce((total, expense) => total + parseFloat(expense.amount), 0);
+                },
+
+                // Additional utility functions
+                getLastMonthTotal() {
+                    const lastMonth = new Date(this.selectedDate);
+                    lastMonth.setMonth(lastMonth.getMonth() - 1);
+                    
+                    const lastMonthExpenses = this.expenses.filter(expense => {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate.getMonth() === lastMonth.getMonth() && 
+                               expenseDate.getFullYear() === lastMonth.getFullYear();
+                    });
+                    
+                    return lastMonthExpenses.reduce((total, expense) => total + parseFloat(expense.amount), 0);
+                },
+
+                // Quick expense templates
+                getQuickExpenseTemplates() {
+                    return [
+                        { description: 'Morning Coffee', category: 'Food', amount: 5.00 },
+                        { description: 'Lunch', category: 'Food', amount: 15.00 },
+                        { description: 'Gas Fill-up', category: 'Transport', amount: 50.00 },
+                        { description: 'Grocery Shopping', category: 'Shopping', amount: 80.00 },
+                        { description: 'Movie Ticket', category: 'Entertainment', amount: 12.00 },
+                        { description: 'Utility Bill', category: 'Bills', amount: 100.00 }
+                    ];
+                },
+
+                // Expense analytics
+                getSpendingTrend() {
+                    const thisMonth = this.getCurrentMonthTotal();
+                    const lastMonth = this.getLastMonthTotal();
+                    
+                    if (lastMonth === 0) return { trend: 'neutral', message: 'First month tracking' };
+                    
+                    const percentageChange = ((thisMonth - lastMonth) / lastMonth) * 100;
+                    
+                    if (percentageChange > 10) {
+                        return { trend: 'up', message: `Spending up ${percentageChange.toFixed(1)}% from last month` };
+                    } else if (percentageChange < -10) {
+                        return { trend: 'down', message: `Spending down ${Math.abs(percentageChange).toFixed(1)}% from last month` };
+                    } else {
+                        return { trend: 'stable', message: 'Spending similar to last month' };
+                    }
+                },
+
+                // Category budget tracking
+                getCategorySpending(category) {
+                    const expenses = this.getMonthlyExpenses().filter(e => e.category === category);
+                    return expenses.reduce((total, expense) => total + parseFloat(expense.amount), 0);
+                },
+
+                // Expense frequency analysis
+                getMostFrequentExpenseType() {
+                    const expenses = this.getMonthlyExpenses();
+                    if (expenses.length === 0) return 'No expenses';
+                    
+                    const descriptions = {};
+                    expenses.forEach(expense => {
+                        const key = expense.description.toLowerCase();
+                        descriptions[key] = (descriptions[key] || 0) + 1;
+                    });
+                    
+                    const mostFrequent = Object.keys(descriptions).reduce((a, b) => 
+                        descriptions[a] > descriptions[b] ? a : b
+                    );
+                    
+                    return `"${mostFrequent}" (${descriptions[mostFrequent]} times)`;
                 }
             }
         }
