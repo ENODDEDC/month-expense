@@ -1,8 +1,8 @@
 {
-  "name": "Expense Tracker",
-  "short_name": "ExpenseTracker",
+  "name": "Monthly Expense Tracker",
+  "short_name": "MonthlyExpense",
   "description": "Track your expenses with budget management and analytics",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#4f46e5",
   "theme_color": "#4f46e5",

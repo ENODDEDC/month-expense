@@ -1,14 +1,18 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExpenseController;
 
-// Redirect root to login
+// Public Homepage for guests; redirect authenticated users to dashboard
 Route::get('/', function () {
-    return redirect('/login');
+    if (Auth::check()) {
+        return redirect()->route('dashboard');
+    }
+    return view('home');
 });
 
 // Authentication Routes

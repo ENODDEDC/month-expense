@@ -4,173 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Login - {{ config('app.name') }}</title>
+    <title>Sign in - Monthly Expense Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div class="max-w-md w-full space-y-8">
-            <div class="bg-white rounded-2xl shadow-xl p-8">
-                <!-- Header -->
-                <div class="text-center mb-8">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-                    <p class="text-gray-600">Sign in to your account</p>
-                </div>
-
-                <!-- Login Form -->
-                <form method="POST" action="{{ route('login') }}" class="space-y-6">
-                    @csrf
-                    
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            required
-                            value="{{ old('email') }}"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 @error('email') border-red-500 @enderror"
-                            placeholder="Enter your email"
-                        />
-                        @error('email')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 @error('password') border-red-500 @enderror"
-                            placeholder="Enter your password"
-                        />
-                        @error('password')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <input
-                                id="remember"
-                                name="remember"
-                                type="checkbox"
-                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            />
-                            <label for="remember" class="ml-2 block text-sm text-gray-700">Remember me</label>
-                        </div>
-                        
-                        <div class="text-sm">
-                            <a href="#" class="font-medium text-blue-600 hover:text-blue-500 transition duration-200">Forgot password?</a>
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
-                    >
-                        Sign In
-                    </button>
-                </form>
-
-                <!-- Register Link -->
-                <div class="mt-6 text-center">
-                    <p class="text-sm text-gray-600">
-                        Don't have an account?
-                        <a href="{{ route('register') }}" class="font-medium text-blue-600 hover:text-blue-500 transition duration-200">Sign up</a>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // Ensure fresh CSRF token on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Add a timestamp to prevent caching issues
-            const form = document.querySelector('form');
-            if (form) {
-                const timestamp = document.createElement('input');
-                timestamp.type = 'hidden';
-                timestamp.name = '_timestamp';
-                timestamp.value = Date.now();
-                form.appendChild(timestamp);
-                
-                // Debug: Log CSRF token
-                const csrfToken = form.querySelector('input[name="_token"]');
-                if (csrfToken) {
-                    console.log('CSRF Token found:', csrfToken.value.substring(0, 10) + '...');
-                } else {
-                    console.error('CSRF Token missing!');
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 600: '#4f46e5', 700: '#4338ca' }
+                    }
                 }
             }
-            
-            // Add form submission handler to debug 419 errors
-            const loginForm = document.querySelector('form');
-            if (loginForm) {
-                loginForm.addEventListener('submit', function(e) {
-                    e.preventDefault(); // Prevent default submission for debugging
-                    
-                    console.log('Form submitting...');
-                    const formData = new FormData(loginForm);
-                    console.log('Form data:', Object.fromEntries(formData));
-                    
-                    // Test CSRF token by making a manual fetch request
-                    fetch('/login', {
-                        method: 'POST',
-                        body: formData,
-                        credentials: 'same-origin',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                        }
-                    })
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        if (response.status === 419) {
-                            console.error('419 CSRF Error - Token mismatch');
-                            console.log('Attempting to refresh CSRF token...');
-                            
-                            // Try to get a fresh CSRF token
-                            fetch('/test-csrf')
-                                .then(res => res.json())
-                                .then(data => {
-                                    console.log('Fresh CSRF token:', data.csrf_token.substring(0, 10) + '...');
-                                    
-                                    // Update the form with fresh token
-                                    const tokenInput = form.querySelector('input[name="_token"]');
-                                    if (tokenInput) {
-                                        tokenInput.value = data.csrf_token;
-                                        console.log('CSRF token updated, please try again');
-                                        alert('CSRF token refreshed. Please try logging in again.');
-                                    }
-                                })
-                                .catch(err => {
-                                    console.error('Failed to refresh CSRF token:', err);
-                                    alert('CSRF Error: Please refresh the page and try again');
-                                });
-                        } else if (response.status === 422) {
-                            console.log('Validation error');
-                            return response.json().then(data => {
-                                console.log('Validation errors:', data);
-                                alert('Login failed: ' + JSON.stringify(data.errors || data.message));
-                            });
-                        } else if (response.ok || response.status === 302) {
-                            console.log('Login successful, redirecting...');
-                            window.location.href = '/dashboard';
-                        } else {
-                            console.error('Unexpected response:', response.status);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Network error:', error);
-                        alert('Network error: ' + error.message);
-                    });
-                });
-            }
-        });
+        }
     </script>
+</head>
+<body class="antialiased bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 text-gray-800">
+    <header class="sticky top-0 z-40 backdrop-blur bg-white/70 border-b border-white/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+            <a href="/" class="flex items-center space-x-2">
+                <span class="text-2xl">💰</span>
+                <span class="font-extrabold text-lg sm:text-xl tracking-tight">Monthly Expense Tracker</span>
+            </a>
+            <div class="flex items-center space-x-2">
+                <a href="{{ route('register') }}" class="px-4 py-2 text-sm font-semibold rounded-lg text-white bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-700 hover:to-purple-700 shadow">Create account</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-12">
+        <div class="w-full max-w-md">
+            <div class="rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden bg-white">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+                    <h1 class="text-2xl font-bold">Welcome back</h1>
+                    <p class="text-blue-100 text-sm">Sign in to continue tracking your expenses</p>
+                </div>
+                <div class="p-6">
+                    <form method="POST" action="{{ route('login') }}" class="space-y-5">
+                        @csrf
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email address</label>
+                            <input id="email" name="email" type="email" required value="{{ old('email') }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent transition duration-200 @error('email') border-red-500 @enderror" placeholder="you@example.com" />
+                            @error('email')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <input id="password" name="password" type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent transition duration-200 @error('password') border-red-500 @enderror" placeholder="Your password" />
+                            @error('password')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center text-sm text-gray-700">
+                                <input id="remember" name="remember" type="checkbox" class="h-4 w-4 text-brand-600 focus:ring-brand-600 border-gray-300 rounded mr-2" />
+                                Remember me
+                            </label>
+                            <a href="#" class="text-sm text-brand-600 hover:text-brand-700">Forgot password?</a>
+                        </div>
+                        <button type="submit" class="w-full inline-flex justify-center items-center py-3 px-4 rounded-lg text-white font-semibold bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-700 hover:to-purple-700 shadow">
+                            Sign in
+                        </button>
+                    </form>
+
+                    <div class="mt-6 text-center text-sm text-gray-600">
+                        Don't have an account?
+                        <a href="{{ route('register') }}" class="font-medium text-brand-600 hover:text-brand-700">Create account</a>
+                    </div>
+                </div>
+            </div>
+            <p class="text-center text-xs text-gray-500 mt-4">© <span x-data x-text="new Date().getFullYear()"></span> Monthly Expense Tracker</p>
+        </div>
+    </main>
 </body>
 </html>
