@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Auth;
 class ExpenseController extends Controller
 {
     /**
+     * Display a listing of the resource for API.
+     */
+    public function index()
+    {
+        $expenses = Auth::user()->expenses()->orderBy('date', 'desc')->get();
+        return response()->json($expenses);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)

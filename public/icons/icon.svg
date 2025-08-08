@@ -1,0 +1,14 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient0_linear_1_1" x1="0" y1="0" x2="192" y2="192" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="24" fill="url(#gradient0_linear_1_1)"/>
+  <!-- Money/Dollar Symbol -->
+  <path d="M96 48C81.2 48 69.3333 59.8667 69.3333 74.6667V117.333C69.3333 132.133 81.2 144 96 144S122.667 132.133 122.667 117.333V74.6667C122.667 59.8667 110.8 48 96 48Z" fill="white"/>
+  <path d="M96 64C89.6 64 84.4 69.2 84.4 75.6V96H107.6V75.6C107.6 69.2 102.4 64 96 64Z" fill="#4F46E5"/>
+  <!-- Dollar sign -->
+  <text x="96" y="120" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="white">$</text>
+</svg>

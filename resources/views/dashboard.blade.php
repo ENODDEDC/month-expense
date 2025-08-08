@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Dashboard - {{ config('app.name') }}</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Expense Tracker">
+    <meta name="description" content="Track your expenses with budget management and analytics">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-TileColor" content="#4f46e5">
+    <meta name="msapplication-tap-highlight" content="no">
+    
+    <!-- PWA Icons -->
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#4f46e5">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script>
@@ -79,8 +97,32 @@
                                 
                                 <!-- Quick Stats with Currency Switcher and Logout -->
                                 <div class="flex flex-col space-y-4">
-                                    <!-- Currency Switcher and Logout -->
+                                    <!-- PWA Controls, Currency Switcher and Logout -->
                                     <div class="flex justify-end space-x-2">
+                                        <!-- PWA Install Button -->
+                                        <button 
+                                            x-show="showInstallButton"
+                                            @click="installPWA()"
+                                            class="glass-effect rounded-lg px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-all duration-300 flex items-center space-x-2"
+                                            title="Install App"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            <span>Install</span>
+                                        </button>
+
+                                        <!-- Offline Status Indicator -->
+                                        <div 
+                                            x-show="!isOnline()"
+                                            class="glass-effect rounded-lg px-4 py-2 text-sm font-medium text-white flex items-center space-x-2"
+                                            title="You're offline - changes will sync when back online"
+                                        >
+                                            <div class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                                            <span>Offline</span>
+                                            <span x-show="offlineDataCount > 0" x-text="'(' + offlineDataCount + ')'"></span>
+                                        </div>
+
                                         <button 
                                             @click="switchCurrency()"
                                             class="glass-effect rounded-lg px-4 py-2 text-sm font-medium text-white hover:bg-white/20 transition-all duration-300 flex items-center space-x-2"
@@ -151,6 +193,31 @@
                 </div>
             </div>
 
+            <!-- Offline Banner - Shows when user is offline -->
+            <div 
+                x-show="!isOnline()"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform -translate-y-2"
+                x-transition:enter-end="opacity-100 transform translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform translate-y-0"
+                x-transition:leave-end="opacity-0 transform -translate-y-2"
+                class="bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 rounded-xl shadow-lg mb-4 animate-pulse"
+            >
+                <div class="flex items-center justify-center space-x-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                        <span class="font-bold text-lg">📱 OFFLINE MODE</span>
+                    </div>
+                    <div class="hidden md:block text-sm opacity-90">
+                        You can still add expenses - they'll sync when you're back online
+                    </div>
+                    <div x-show="offlineDataCount > 0" class="bg-white/20 rounded-full px-3 py-1 text-sm font-medium">
+                        <span x-text="offlineDataCount"></span> pending
+                    </div>
+                </div>
+            </div>
+
             <!-- Enhanced Navigation Tabs -->
             <div class="bg-white rounded-xl shadow-lg mb-4 overflow-hidden animate-slide-up">
                 <nav class="flex">
@@ -177,6 +244,17 @@
                     >
                         <span class="text-xl mr-3">➕</span>
                         <span>Add Expense</span>
+                    </button>
+                    <!-- Offline Data Tab - Only show when there's offline data -->
+                    <button
+                        x-show="offlineDataCount > 0"
+                        @click="activeTab = 'offline'"
+                        :class="activeTab === 'offline' ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'"
+                        class="flex-1 flex items-center justify-center py-4 px-6 font-semibold text-sm transition-all duration-300 transform hover:scale-105"
+                    >
+                        <span class="text-xl mr-3">📱</span>
+                        <span>Offline</span>
+                        <span class="ml-1 bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full" x-text="offlineDataCount"></span>
                     </button>
                     <button
                         @click="activeTab = 'summary'"
@@ -483,9 +561,12 @@
                                                     <span class="text-2xl" x-text="getCategoryIcon(expense.category)"></span>
                                                 </div>
                                                 <div class="flex-1">
-                                                    <h4 class="font-bold text-gray-900 text-lg" x-text="expense.description"></h4>
+                                                    <h4 class="font-bold text-gray-900 text-lg flex items-center">
+                                                        <span x-text="expense.description"></span>
+                                                        <span x-show="expense.offline" class="ml-2 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">Offline</span>
+                                                    </h4>
                                                     <p class="text-sm text-gray-500 flex items-center">
-                                                        <span class="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>
+                                                        <span class="inline-block w-2 h-2 rounded-full mr-2" :class="expense.offline ? 'bg-orange-500' : 'bg-blue-500'"></span>
                                                         <span x-text="expense.category + ' • ' + formatDate(expense.date)"></span>
                                                     </p>
                                                 </div>
@@ -659,6 +740,68 @@
                                 <kbd class="px-2 py-1 bg-blue-100 rounded text-xs">Ctrl + F</kbd>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Offline Data Tab -->
+            <div x-show="activeTab === 'offline'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" class="p-8">
+                <div class="text-center mb-8 animate-bounce-in">
+                    <div class="text-6xl mb-4">📱</div>
+                    <h2 class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">Offline Data</h2>
+                    <p class="text-gray-600 text-lg">Expenses saved while offline</p>
+                </div>
+
+                <div x-show="getOfflineExpenses().length === 0" class="text-center py-12">
+                    <div class="text-6xl mb-4">✨</div>
+                    <h3 class="text-xl font-semibold text-gray-600 mb-2">No offline data</h3>
+                    <p class="text-gray-500">Add expenses while offline and they'll appear here</p>
+                </div>
+
+                <div x-show="getOfflineExpenses().length > 0">
+                    <!-- Offline Summary Card -->
+                    <div class="bg-gradient-to-r from-orange-50 to-red-50 p-6 rounded-lg mb-6 border border-orange-200">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">Pending Sync</h3>
+                                <p class="text-gray-600" x-text="getOfflineExpenses().length + ' expenses waiting to sync'"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-3xl font-bold text-orange-600" x-text="formatCurrency(getOfflineExpensesTotal())"></p>
+                                <p class="text-sm text-gray-600">Total amount</p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button @click="syncOfflineData()" class="bg-orange-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-orange-700 transition-colors">
+                                Sync Now
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Offline Expenses List -->
+                    <div class="space-y-4">
+                        <template x-for="expense in getOfflineExpenses()">
+                            <div class="bg-orange-50 border border-orange-200 rounded-lg p-6 animate-slide-up">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex items-center flex-1">
+                                        <div class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mr-4">
+                                            <span class="text-2xl" x-text="getCategoryIcon(expense.category)"></span>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h4 class="font-bold text-gray-900 text-lg flex items-center">
+                                                <span x-text="expense.description"></span>
+                                                <span class="ml-2 px-2 py-1 bg-orange-200 text-orange-800 text-xs rounded-full">Pending Sync</span>
+                                            </h4>
+                                            <p class="text-sm text-gray-600" x-text="expense.category + ' • ' + formatDate(expense.date)"></p>
+                                            <p class="text-xs text-gray-500 mt-1" x-text="'Saved: ' + formatDate(expense.timestamp)"></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-2xl font-bold text-orange-600" x-text="formatCurrency(expense.amount)"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -1160,6 +1303,25 @@
                 toastMessage: '',
                 toastType: 'success', // 'success' or 'error'
 
+                // PWA properties
+                showInstallButton: false,
+                isOffline: false,
+                offlineDataCount: 0,
+                onlineStatus: navigator.onLine, // Track online status reactively
+                syncInProgress: false, // Prevent multiple sync calls
+                
+                // Initialize offline data count on load
+                initOfflineDataCount() {
+                    const offlineData = JSON.parse(localStorage.getItem('expense_tracker_offline_data') || '[]');
+                    this.offlineDataCount = offlineData.length;
+                },
+
+                // Update offline data count
+                updateOfflineDataCount() {
+                    const offlineData = JSON.parse(localStorage.getItem('expense_tracker_offline_data') || '[]');
+                    this.offlineDataCount = offlineData.length;
+                },
+
                 getCurrentMonthName() {
                     return this.monthNames[this.selectedDate.getMonth()] + ' ' + this.selectedDate.getFullYear();
                 },
@@ -1270,6 +1432,43 @@
                         amount: amountInUSD
                     };
 
+                    // Check if online with debugging
+                    console.log('=== ADD EXPENSE DEBUG ===');
+                    console.log('Navigator online status:', navigator.onLine);
+                    console.log('Our online status:', this.onlineStatus);
+                    console.log('Offline banner showing:', !this.isOnline());
+                    
+                    if (!this.onlineStatus) {
+                        console.log('OFFLINE MODE: Saving expense locally only (will NOT hit database)');
+                        // Handle offline - add to main array for immediate display AND store for sync
+                        const offlineExpense = {
+                            id: 'offline_' + Date.now(), // Unique offline ID
+                            ...newExpenseData,
+                            offline: true,
+                            created_at: new Date().toISOString()
+                        };
+                        
+                        // Add to main array for immediate calendar display
+                        this.expenses.push(offlineExpense);
+                        
+                        // Store for later sync
+                        await this.storeOfflineExpense(newExpenseData);
+                        
+                        // Update offline data count
+                        this.updateOfflineDataCount();
+                        
+                        // Reset form
+                        this.newExpense = {
+                            date: new Date().toISOString().split('T')[0],
+                            category: 'Food',
+                            description: '',
+                            amount: ''
+                        };
+                        
+                        this.showToast('Expense saved offline! Will sync when back online.', 'success');
+                        return;
+                    }
+
                     try {
                         const response = await fetch('{{ route('expenses.store') }}', {
                             method: 'POST',
@@ -1281,6 +1480,9 @@
                         });
 
                         if (!response.ok) {
+                            // Handle 419 Page Expired error
+                            if (this.handle419Error(response)) return;
+                            
                             const errorData = await response.json();
                             console.error('Error response:', errorData);
                             this.showToast('Failed to add expense. Please try again.', 'error');
@@ -1303,8 +1505,42 @@
 
                     } catch (error) {
                         console.error('There has been a problem with your fetch operation:', error);
-                        this.showToast('Failed to add expense. Please check your connection.', 'error');
+                        
+                        // If network error, treat as offline - only store in localStorage
+                        await this.storeOfflineExpense(newExpenseData);
+                        
+                        // Update offline data count
+                        this.updateOfflineDataCount();
+                        
+                        // Reset form
+                        this.newExpense = {
+                            date: new Date().toISOString().split('T')[0],
+                            category: 'Food',
+                            description: '',
+                            amount: ''
+                        };
+                        
+                        this.showToast('Network error - expense saved offline!', 'success');
                     }
+                },
+
+                // Store expense for offline sync
+                async storeOfflineExpense(expenseData) {
+                    const offlineData = JSON.parse(localStorage.getItem('expense_tracker_offline_data') || '[]');
+                    
+                    const offlineItem = {
+                        id: Date.now(),
+                        method: 'POST',
+                        endpoint: '{{ route('expenses.store') }}',
+                        data: expenseData,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    offlineData.push(offlineItem);
+                    localStorage.setItem('expense_tracker_offline_data', JSON.stringify(offlineData));
+                    
+                    // Update offline data count using the new function
+                    this.updateOfflineDataCount();
                 },
 
                 applyQuickSuggestion(suggestion) {
@@ -1321,8 +1557,284 @@
                     this.loadBudget();
                     this.loadTheme();
                     
+                    // Initialize offline data count
+                    this.initOfflineDataCount();
+                    
                     // Add keyboard shortcuts
                     document.addEventListener('keydown', this.handleKeyboardShortcuts.bind(this));
+                    
+                    // Initialize PWA functionality
+                    this.initPWA();
+                    
+                    // Refresh CSRF token periodically to prevent 419 errors
+                    this.initCSRFRefresh();
+                    
+                    // Add real-time online/offline detection
+                    this.initOnlineOfflineDetection();
+                },
+
+                // Initialize real-time online/offline detection
+                initOnlineOfflineDetection() {
+                    // Listen for online/offline events
+                    window.addEventListener('online', () => {
+                        console.log('Back online!');
+                        this.onlineStatus = true; // Update reactive property
+                        this.showToast('Back online! Syncing data...', 'success');
+                        this.syncOfflineData();
+                        this.updateOfflineDataCount();
+                    });
+
+                    window.addEventListener('offline', () => {
+                        console.log('Gone offline!');
+                        this.onlineStatus = false; // Update reactive property
+                        this.showToast('You\'re offline. Changes will sync when back online.', 'error');
+                        this.updateOfflineDataCount();
+                    });
+
+                    // Check connection status periodically and update reactive property
+                    setInterval(() => {
+                        const currentStatus = navigator.onLine;
+                        if (this.onlineStatus !== currentStatus) {
+                            this.onlineStatus = currentStatus;
+                            console.log('Connection status changed:', currentStatus ? 'online' : 'offline');
+                        }
+                    }, 1000); // Check every second
+                },
+
+                // Initialize CSRF token refresh to prevent 419 errors
+                initCSRFRefresh() {
+                    // Refresh CSRF token every 30 minutes
+                    setInterval(async () => {
+                        try {
+                            const response = await fetch('/refresh-csrf', {
+                                method: 'GET',
+                                credentials: 'same-origin'
+                            });
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.csrf_token) {
+                                    document.querySelector('meta[name="csrf-token"]').setAttribute('content', data.csrf_token);
+                                    console.log('CSRF token refreshed');
+                                }
+                            }
+                        } catch (error) {
+                            console.log('Failed to refresh CSRF token:', error);
+                        }
+                    }, 10 * 60 * 1000); // 10 minutes
+                },
+
+                // Helper function to handle 419 Page Expired errors
+                handle419Error(response) {
+                    if (response.status === 419) {
+                        this.showToast('Session expired. Refreshing page...', 'error');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                        return true;
+                    }
+                    return false;
+                },
+
+                // PWA Functionality
+                initPWA() {
+                    
+                    // Register service worker
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.register('/sw.js')
+                            .then((registration) => {
+                                console.log('Service Worker registered successfully:', registration);
+                                
+                                // Force immediate activation
+                                if (registration.waiting) {
+                                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                                
+                                // Listen for updates
+                                registration.addEventListener('updatefound', () => {
+                                    const newWorker = registration.installing;
+                                    newWorker.addEventListener('statechange', () => {
+                                        if (newWorker.state === 'installed') {
+                                            if (navigator.serviceWorker.controller) {
+                                                this.showToast('App updated! Refresh to see changes.', 'success');
+                                            } else {
+                                                this.showToast('App ready for offline use!', 'success');
+                                            }
+                                        }
+                                    });
+                                });
+                            })
+                            .catch((error) => {
+                                console.log('Service Worker registration failed:', error);
+                            });
+
+                        // Listen for messages from service worker
+                        navigator.serviceWorker.addEventListener('message', (event) => {
+                            if (event.data.type === 'SYNC_COMPLETE') {
+                                this.showToast(`Synced ${event.data.syncedCount} offline expenses!`, 'success');
+                                // Refresh expenses from server
+                                this.refreshExpenses();
+                            }
+                        });
+                    }
+
+                    // Handle online/offline status
+                    window.addEventListener('online', () => {
+                        this.showToast('Back online! Syncing data...', 'success');
+                        this.syncOfflineData();
+                    });
+
+                    window.addEventListener('offline', () => {
+                        this.showToast('You\'re offline. Changes will sync when back online.', 'error');
+                    });
+
+                    // Show install prompt
+                    this.handleInstallPrompt();
+                },
+
+                // Handle PWA install prompt
+                handleInstallPrompt() {
+                    let deferredPrompt;
+                    
+                    window.addEventListener('beforeinstallprompt', (e) => {
+                        e.preventDefault();
+                        deferredPrompt = e;
+                        
+                        // Show install button
+                        this.showInstallButton = true;
+                    });
+
+                    // Install button click handler
+                    this.installPWA = async () => {
+                        if (deferredPrompt) {
+                            deferredPrompt.prompt();
+                            const { outcome } = await deferredPrompt.userChoice;
+                            
+                            if (outcome === 'accepted') {
+                                this.showToast('App installed successfully!', 'success');
+                            }
+                            
+                            deferredPrompt = null;
+                            this.showInstallButton = false;
+                        }
+                    };
+                },
+
+                // Sync offline data - SAVE TO DATABASE BUT PREVENT DUPLICATES
+                async syncOfflineData() {
+                    const offlineData = JSON.parse(localStorage.getItem('expense_tracker_offline_data') || '[]');
+                    
+                    if (offlineData.length === 0) return;
+                    
+                    console.log('Syncing', offlineData.length, 'offline items to database');
+                    
+                    let syncedCount = 0;
+                    const remainingData = [];
+                    
+                    // DEBUG: Check if sync is being called multiple times
+                    console.log('🔍 SYNC DEBUG: Starting sync process');
+                    console.log('🔍 Number of offline items to sync:', offlineData.length);
+                    console.log('🔍 Current expenses in array:', this.expenses.length);
+                    
+                    // Check if sync is already running
+                    if (this.syncInProgress) {
+                        console.log('⚠️ SYNC ALREADY IN PROGRESS - SKIPPING');
+                        return;
+                    }
+                    this.syncInProgress = true;
+                    
+                    for (const item of offlineData) {
+                        try {
+                            console.log('🔄 Syncing to database:', item.data.description, item.data.amount);
+                            console.log('🔄 API endpoint:', item.endpoint);
+                            console.log('🔄 Request data:', JSON.stringify(item.data));
+                            
+                            // Make ONE API call to save to database
+                            const response = await fetch(item.endpoint, {
+                                method: item.method,
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                },
+                                body: JSON.stringify(item.data)
+                            });
+                            
+                            console.log('🔄 Response status:', response.status);
+                            
+                            if (response.ok) {
+                                const savedExpense = await response.json();
+                                console.log('✅ SAVED TO DATABASE:', savedExpense.description, 'ID:', savedExpense.id);
+                                
+                                // Find and REPLACE the offline expense with the database version
+                                const offlineExpenseIndex = this.expenses.findIndex(e => 
+                                    e.offline === true &&
+                                    e.description === item.data.description &&
+                                    Math.abs(parseFloat(e.amount) - parseFloat(item.data.amount)) < 0.01 &&
+                                    e.date.split('T')[0] === item.data.date &&
+                                    e.category === item.data.category
+                                );
+                                
+                                console.log('🔍 Looking for offline expense to replace...');
+                                console.log('🔍 Found at index:', offlineExpenseIndex);
+                                
+                                if (offlineExpenseIndex !== -1) {
+                                    console.log('🔄 BEFORE REPLACE - Expenses count:', this.expenses.length);
+                                    // REPLACE offline expense with database version (same position)
+                                    this.expenses[offlineExpenseIndex] = savedExpense;
+                                    console.log('✅ REPLACED offline expense with database version');
+                                    console.log('🔄 AFTER REPLACE - Expenses count:', this.expenses.length);
+                                } else {
+                                    console.log('⚠️ Could not find offline expense to replace - adding new one');
+                                    this.expenses.push(savedExpense);
+                                }
+                                
+                                syncedCount++;
+                            } else {
+                                console.log('❌ Failed to save to database:', response.status);
+                                remainingData.push(item);
+                            }
+                        } catch (error) {
+                            console.log('❌ Error saving to database:', error);
+                            remainingData.push(item);
+                        }
+                    }
+                    
+                    this.syncInProgress = false;
+                    
+                    // Clear synced items from localStorage, keep failed ones
+                    localStorage.setItem('expense_tracker_offline_data', JSON.stringify(remainingData));
+                    console.log('Updated localStorage. Remaining items:', remainingData.length);
+                    
+                    // Update offline data count
+                    this.updateOfflineDataCount();
+                    
+                    if (syncedCount > 0) {
+                        this.showToast(`Synced ${syncedCount} offline expenses to database!`, 'success');
+                    }
+                },
+
+                // Refresh expenses from server
+                async refreshExpenses() {
+                    try {
+                        const response = await fetch('/api/expenses');
+                        if (response.ok) {
+                            const expenses = await response.json();
+                            this.expenses = expenses;
+                        }
+                    } catch (error) {
+                        console.log('Failed to refresh expenses:', error);
+                    }
+                },
+
+                // Check if app is running as PWA
+                isPWA() {
+                    return window.matchMedia('(display-mode: standalone)').matches ||
+                           window.navigator.standalone ||
+                           document.referrer.includes('android-app://');
+                },
+
+                // Get offline status
+                isOnline() {
+                    return this.onlineStatus;
                 },
 
                 // Load saved currency preference from localStorage
@@ -1472,6 +1984,38 @@
                         amount: amountInUSD
                     };
 
+                    // Check if online with debugging
+                    console.log('=== EXPENSE MODAL DEBUG ===');
+                    console.log('Navigator online status:', navigator.onLine);
+                    console.log('Our online status:', this.onlineStatus);
+                    console.log('Offline banner showing:', !this.isOnline());
+                    
+                    if (!this.onlineStatus) {
+                        console.log('OFFLINE MODE: Saving expense locally only (will NOT hit database)');
+                        // Handle offline - add to main array for immediate display AND store for sync
+                        const offlineExpense = {
+                            id: 'offline_' + Date.now(), // Unique offline ID
+                            ...newExpenseData,
+                            offline: true,
+                            created_at: new Date().toISOString()
+                        };
+                        
+                        // Add to main array for immediate calendar display
+                        this.expenses.push(offlineExpense);
+                        
+                        // Store for later sync (but mark it to prevent duplicate sync)
+                        await this.storeOfflineExpense(newExpenseData);
+                        
+                        // Update offline data count
+                        this.updateOfflineDataCount();
+                        
+                        this.closeExpenseModal();
+                        this.showToast('Expense saved offline! Will sync when back online.', 'success');
+                        return;
+                    }
+                    
+                    console.log('ONLINE MODE: Saving expense to database immediately');
+
                     try {
                         const response = await fetch('{{ route('expenses.store') }}', {
                             method: 'POST',
@@ -1483,6 +2027,9 @@
                         });
 
                         if (!response.ok) {
+                            // Handle 419 Page Expired error
+                            if (this.handle419Error(response)) return;
+                            
                             const errorData = await response.json();
                             console.error('Error response:', errorData);
                             this.showToast('Failed to add expense. Please try again.', 'error');
@@ -1497,7 +2044,15 @@
 
                     } catch (error) {
                         console.error('There has been a problem with your fetch operation:', error);
-                        this.showToast('Failed to add expense. Please check your connection.', 'error');
+                        
+                        // If network error, treat as offline - only store in localStorage
+                        await this.storeOfflineExpense(newExpenseData);
+                        
+                        // Update offline data count
+                        this.updateOfflineDataCount();
+                        
+                        this.closeExpenseModal();
+                        this.showToast('Network error - expense saved offline!', 'success');
                     }
                 },
 
@@ -1751,6 +2306,9 @@
                         });
 
                         if (!response.ok) {
+                            // Handle 419 Page Expired error
+                            if (this.handle419Error(response)) return;
+                            
                             const errorData = await response.json();
                             console.error('Error response:', errorData);
                             this.showToast('Failed to update expense. Please try again.', 'error');
@@ -1797,6 +2355,9 @@
                         });
 
                         if (!response.ok) {
+                            // Handle 419 Page Expired error
+                            if (this.handle419Error(response)) return;
+                            
                             const errorData = await response.json();
                             console.error('Error response:', errorData);
                             this.showToast('Failed to delete expense. Please try again.', 'error');
@@ -1876,6 +2437,25 @@
                     });
                     
                     return weeklyExpenses.reduce((total, expense) => total + parseFloat(expense.amount), 0);
+                },
+
+                // Offline data functions
+                getOfflineExpenses() {
+                    // Get expenses from localStorage (these are the pending sync items)
+                    const offlineData = JSON.parse(localStorage.getItem('expense_tracker_offline_data') || '[]');
+                    return offlineData.map(item => ({
+                        ...item.data,
+                        id: item.id,
+                        timestamp: item.timestamp,
+                        offline: true
+                    }));
+                },
+
+                getOfflineExpensesTotal() {
+                    return this.getOfflineExpenses().reduce((total, expense) => {
+                        const amount = parseFloat(expense.amount || 0);
+                        return total + (this.currentCurrency.code === 'USD' ? amount : amount * this.exchangeRate);
+                    }, 0);
                 },
 
                 // Additional utility functions

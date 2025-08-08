@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Login - {{ config('app.name') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -85,5 +86,91 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Ensure fresh CSRF token on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add a timestamp to prevent caching issues
+            const form = document.querySelector('form');
+            if (form) {
+                const timestamp = document.createElement('input');
+                timestamp.type = 'hidden';
+                timestamp.name = '_timestamp';
+                timestamp.value = Date.now();
+                form.appendChild(timestamp);
+                
+                // Debug: Log CSRF token
+                const csrfToken = form.querySelector('input[name="_token"]');
+                if (csrfToken) {
+                    console.log('CSRF Token found:', csrfToken.value.substring(0, 10) + '...');
+                } else {
+                    console.error('CSRF Token missing!');
+                }
+            }
+            
+            // Add form submission handler to debug 419 errors
+            const loginForm = document.querySelector('form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault(); // Prevent default submission for debugging
+                    
+                    console.log('Form submitting...');
+                    const formData = new FormData(loginForm);
+                    console.log('Form data:', Object.fromEntries(formData));
+                    
+                    // Test CSRF token by making a manual fetch request
+                    fetch('/login', {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    })
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        if (response.status === 419) {
+                            console.error('419 CSRF Error - Token mismatch');
+                            console.log('Attempting to refresh CSRF token...');
+                            
+                            // Try to get a fresh CSRF token
+                            fetch('/test-csrf')
+                                .then(res => res.json())
+                                .then(data => {
+                                    console.log('Fresh CSRF token:', data.csrf_token.substring(0, 10) + '...');
+                                    
+                                    // Update the form with fresh token
+                                    const tokenInput = form.querySelector('input[name="_token"]');
+                                    if (tokenInput) {
+                                        tokenInput.value = data.csrf_token;
+                                        console.log('CSRF token updated, please try again');
+                                        alert('CSRF token refreshed. Please try logging in again.');
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error('Failed to refresh CSRF token:', err);
+                                    alert('CSRF Error: Please refresh the page and try again');
+                                });
+                        } else if (response.status === 422) {
+                            console.log('Validation error');
+                            return response.json().then(data => {
+                                console.log('Validation errors:', data);
+                                alert('Login failed: ' + JSON.stringify(data.errors || data.message));
+                            });
+                        } else if (response.ok || response.status === 302) {
+                            console.log('Login successful, redirecting...');
+                            window.location.href = '/dashboard';
+                        } else {
+                            console.error('Unexpected response:', response.status);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Network error:', error);
+                        alert('Network error: ' + error.message);
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>

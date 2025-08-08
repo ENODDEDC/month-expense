@@ -20,7 +20,27 @@ Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->na
 Route::post('/register', [RegisterController::class, 'register']);
 
 // Protected Routes
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('auth');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware(['auth', \App\Http\Middleware\OfflineMiddleware::class]);
 Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store')->middleware('auth');
 Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->name('expenses.update')->middleware('auth');
 Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->name('expenses.destroy')->middleware('auth');
+
+// API Routes for PWA
+Route::get('/api/expenses', [ExpenseController::class, 'index'])->name('api.expenses.index')->middleware('auth');
+
+// Route to refresh CSRF token
+Route::get('/refresh-csrf', function () {
+    return response()->json([
+        'csrf_token' => csrf_token()
+    ]);
+})->middleware('auth');
+
+// Test route to debug CSRF issues (remove after fixing)
+Route::get('/test-csrf', function () {
+    return response()->json([
+        'csrf_token' => csrf_token(),
+        'session_id' => session()->getId(),
+        'session_driver' => config('session.driver'),
+        'app_key' => config('app.key') ? 'Set' : 'Missing'
+    ]);
+});
