@@ -150,7 +150,7 @@ function shouldSkipServiceWorker(request) {
   }
   
   // Skip authentication routes
-  const authPaths = ['/login', '/register', '/logout', '/refresh-csrf'];
+  const authPaths = ['/login', '/register', '/logout', '/refresh-csrf', '/register/verify', '/register/resend'];
   if (authPaths.some(path => url.pathname === path)) {
     return true;
   }

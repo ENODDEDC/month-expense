@@ -39,14 +39,14 @@
                 </div>
                 <div class="p-6">
                     <form method="POST" action="{{ route('register') }}" class="space-y-5">
-                        @csrf
+                    @csrf
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="first_name" class="block text-sm font-medium text-gray-700 mb-2">First name</label>
                                 <input id="first_name" name="first_name" type="text" required value="{{ old('first_name') }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent transition duration-200 @error('first_name') border-red-500 @enderror" placeholder="John" />
                                 @error('first_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                             </div>
-                            <div>
+                        <div>
                                 <label for="last_name" class="block text-sm font-medium text-gray-700 mb-2">Last name</label>
                                 <input id="last_name" name="last_name" type="text" required value="{{ old('last_name') }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent transition duration-200 @error('last_name') border-red-500 @enderror" placeholder="Doe" />
                                 @error('last_name')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
@@ -58,24 +58,24 @@
                             @error('email')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
                                 <input id="password" name="password" type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent transition duration-200 @error('password') border-red-500 @enderror" placeholder="Create a password" />
                                 @error('password')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
-                            </div>
-                            <div>
+                    </div>
+                    <div>
                                 <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-2">Confirm password</label>
                                 <input id="password_confirmation" name="password_confirmation" type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent transition duration-200" placeholder="Repeat your password" />
                             </div>
-                        </div>
+                    </div>
                         <label class="flex items-center text-sm text-gray-700">
                             <input id="terms" name="terms" type="checkbox" required class="h-4 w-4 text-brand-600 focus:ring-brand-600 border-gray-300 rounded mr-2" />
                             I agree to the <a href="#" class="text-brand-600 hover:text-brand-700 mx-1">Terms</a> and <a href="#" class="text-brand-600 hover:text-brand-700 ml-1">Privacy</a>
                         </label>
                         <button type="submit" class="w-full inline-flex justify-center items-center py-3 px-4 rounded-lg text-white font-semibold bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-700 hover:to-purple-700 shadow">
-                            Create account
-                        </button>
-                    </form>
+                            Continue
+                    </button>
+                </form>
 
                     <div class="mt-6 text-center text-sm text-gray-600">
                         Already have an account?

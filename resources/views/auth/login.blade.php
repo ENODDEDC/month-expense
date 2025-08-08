@@ -40,22 +40,22 @@
                 </div>
                 <div class="p-6">
                     <form method="POST" action="{{ route('login') }}" class="space-y-5">
-                        @csrf
-                        <div>
+                    @csrf
+                    <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email address</label>
                             <input id="email" name="email" type="email" required value="{{ old('email') }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent transition duration-200 @error('email') border-red-500 @enderror" placeholder="you@example.com" />
-                            @error('email')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                        @error('email')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
                             <input id="password" name="password" type="password" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-600 focus:border-transparent transition duration-200 @error('password') border-red-500 @enderror" placeholder="Your password" />
-                            @error('password')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div class="flex items-center justify-between">
+                        @error('password')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="flex items-center justify-between">
                             <label class="flex items-center text-sm text-gray-700">
                                 <input id="remember" name="remember" type="checkbox" class="h-4 w-4 text-brand-600 focus:ring-brand-600 border-gray-300 rounded mr-2" />
                                 Remember me
@@ -64,8 +64,8 @@
                         </div>
                         <button type="submit" class="w-full inline-flex justify-center items-center py-3 px-4 rounded-lg text-white font-semibold bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-700 hover:to-purple-700 shadow">
                             Sign in
-                        </button>
-                    </form>
+                    </button>
+                </form>
 
                     <div class="mt-6 text-center text-sm text-gray-600">
                         Don't have an account?

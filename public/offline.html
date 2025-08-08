@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Expense Tracker</title>
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .gradient-border {
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6, #06b6d4);
+            padding: 2px;
+            border-radius: 12px;
+        }
+
+        .gradient-border-content {
+            background: white;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-h-screen">
+    <div class="min-h-screen py-4 px-4" x-data="offlineExpenseTracker()">
+        <!-- Header -->
+        <div class="gradient-border mb-4">
+            <div class="gradient-border-content">
+                <div
+                    class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-4 rounded-lg relative overflow-hidden">
+                    <div class="relative z-10">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                            <div class="mb-6 md:mb-0">
+                                <h1 class="text-4xl font-bold mb-2">💰 Expense Tracker</h1>
+                                <p class="text-blue-100 text-lg">Offline Mode</p>
+                            </div>
+
+                            <div class="flex flex-col space-y-4">
+                                <div class="flex justify-end space-x-2">
+                                    <div
+                                        class="glass-effect rounded-lg px-4 py-2 text-sm font-medium text-white flex items-center space-x-2">
+                                        <div class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
+                                        <span>Offline</span>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="glass-effect rounded-lg p-4 text-center">
+                                        <div class="text-2xl font-bold" x-text="formatCurrency(getTotalExpenses())">
+                                        </div>
+                                        <div class="text-xs text-blue-200">Total Saved</div>
+                                    </div>
+                                    <div class="glass-effect rounded-lg p-4 text-center">
+                                        <div class="text-2xl font-bold" x-text="getOfflineExpenses().length"></div>
+                                        <div class="text-xs text-blue-200">Offline Items</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offline Message -->
+        <div class="bg-orange-50 border border-orange-200 rounded-lg p-6 mb-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-8 w-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-orange-800">You're Currently Offline</h3>
+                    <p class="text-orange-700 mt-1">Don't worry! You can still add expenses and they'll sync when you're
+                        back online.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white rounded-xl shadow-lg mb-4 overflow-hidden">
+            <nav class="flex">
+                <button @click="activeTab = 'add'"
+                    :class="activeTab === 'add' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'"
+                    class="flex-1 flex items-center justify-center py-4 px-6 font-semibold text-sm transition-all duration-300">
+                    <span class="text-xl mr-3">➕</span>
+                    <span>Add Expense</span>
+                </button>
+                <button @click="activeTab = 'offline'"
+                    :class="activeTab === 'offline' ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg' : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'"
+                    class="flex-1 flex items-center justify-center py-4 px-6 font-semibold text-sm transition-all duration-300">
+                    <span class="text-xl mr-3">📱</span>
+                    <span>Offline Data</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- Add Expense Tab -->
+            <div x-show="activeTab === 'add'" class="p-8">
+                <div class="max-w-2xl mx-auto">
+                    <div class="text-center mb-8">
+                        <div class="text-6xl mb-4">💰</div>
+                        <h2
+                            class="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
+                            Add Offline Expense</h2>
+                        <p class="text-gray-600 text-lg">This will be synced when you're back online</p>
+                    </div>
+
+                    <form @submit.prevent="addOfflineExpense()" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                            <input type="date" x-model="newExpense.date"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                                required />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">Category</label>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                <template x-for="category in categories">
+                                    <label
+                                        :class="newExpense.category === category.value ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'"
+                                        class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all">
+                                        <input type="radio" x-model="newExpense.category" :value="category.value"
+                                            class="sr-only" />
+                                        <span class="text-2xl mr-3" x-text="category.icon"></span>
+                                        <span class="font-medium text-gray-700" x-text="category.value"></span>
+                                        <div x-show="newExpense.category === category.value"
+                                            class="absolute top-2 right-2">
+                                            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <input type="text" x-model="newExpense.description"
+                                placeholder="e.g., Lunch at restaurant, Gas for car..."
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                                required />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Amount ($)</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 text-lg">$</span>
+                                </div>
+                                <input type="number" step="0.01" min="0" x-model="newExpense.amount" placeholder="0.00"
+                                    class="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                                    required />
+                            </div>
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit"
+                                class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-200">
+                                Save Offline
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Offline Data Tab -->
+            <div x-show="activeTab === 'offline'" class="p-8">
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-4">📱</div>
+                    <h2
+                        class="text-3xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-2">
+                        Offline Data</h2>
+                    <p class="text-gray-600 text-lg">Expenses saved while offline</p>
+                </div>
+
+                <div x-show="getOfflineExpenses().length === 0" class="text-center py-12">
+                    <div class="text-6xl mb-4">✨</div>
+                    <h3 class="text-xl font-semibold text-gray-600 mb-2">No offline data</h3>
+                    <p class="text-gray-500">Add expenses while offline and they'll appear here</p>
+                </div>
+
+                <div x-show="getOfflineExpenses().length > 0" class="space-y-4">
+                    <template x-for="expense in getOfflineExpenses()">
+                        <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mr-4">
+                                        <span class="text-2xl" x-text="getCategoryIcon(expense.category)"></span>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 text-lg flex items-center">
+                                            <span x-text="expense.description"></span>
+                                            <span
+                                                class="ml-2 px-2 py-1 bg-orange-200 text-orange-800 text-xs rounded-full">Pending
+                                                Sync</span>
+                                        </h4>
+                                        <p class="text-sm text-gray-600"
+                                            x-text="expense.category + ' • ' + formatDate(expense.date)"></p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-2xl font-bold text-orange-600"
+                                        x-text="formatCurrency(expense.amount)"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div x-show="getOfflineExpenses().length > 0" class="mt-6 text-center">
+                    <button @click="checkConnection()"
+                        class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                        Check Connection & Sync
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div x-show="showToast" x-cloak x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="transform translate-y-2 opacity-0"
+            x-transition:enter-end="transform translate-y-0 opacity-100"
+            x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            :class="toastType === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'"
+            class="fixed bottom-5 right-5 w-full max-w-xs shadow-lg rounded-lg pointer-events-auto border-2 overflow-hidden z-50">
+            <div class="p-4">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg x-show="toastType === 'success'" class="h-6 w-6 text-green-400" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <svg x-show="toastType === 'error'" class="h-6 w-6 text-red-400" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3 w-0 flex-1 pt-0.5">
+                        <p :class="toastType === 'success' ? 'text-green-800' : 'text-red-800'"
+                            class="text-sm font-medium" x-text="toastMessage"></p>
+                    </div>
+                    <div class="ml-4 flex-shrink-0 flex">
+                        <button @click="showToast = false"
+                            class="rounded-md inline-flex text-gray-400 hover:text-gray-500">
+                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        function offlineExpenseTracker() {
+            return {
+                activeTab: 'add',
+                newExpense: {
+                    date: new Date().toISOString().split('T')[0],
+                    category: 'Food',
+                    description: '',
+                    amount: ''
+                },
+                categories: [
+                    { value: 'Food', icon: '🍽️' },
+                    { value: 'Transport', icon: '🚗' },
+                    { value: 'Shopping', icon: '🛒' },
+                    { value: 'Entertainment', icon: '🎬' },
+                    { value: 'Bills', icon: '📄' },
+                    { value: 'Other', icon: '📝' }
+                ],
+                showToast: false,
+                toastMessage: '',
+                toastType: 'success',
+
+                addOfflineExpense() {
+                    if (!this.newExpense.description.trim() || !this.newExpense.amount) {
+                        this.showToastMessage('Please fill in all fields', 'error');
+                        return;
+                    }
+
+                    const expenseData = {
+                        date: this.newExpense.date,
+                        category: this.newExpense.category,
+                        description: this.newExpense.description.trim(),
+                        amount: parseFloat(this.newExpense.amount)
+                    };
+
+                    // Store for sync
+                    this.storeOfflineExpense(expenseData);
+
+                    // Reset form
+                    this.newExpense = {
+                        date: new Date().toISOString().split('T')[0],
+                        category: 'Food',
+                        description: '',
+                        amount: ''
+                    };
+
+                    this.showToastMessage('Expense saved offline!', 'success');
+                    this.activeTab = 'offline';
+                },
+
+                storeOfflineExpense(expenseData) {
+                    const offlineData = JSON.parse(localStorage.getItem('expense_tracker_offline_data') || '[]');
+
+                    const offlineItem = {
+                        id: Date.now(),
+                        method: 'POST',
+                        endpoint: '/expenses',
+                        data: expenseData,
+                        timestamp: new Date().toISOString()
+                    };
+
+                    offlineData.push(offlineItem);
+                    localStorage.setItem('expense_tracker_offline_data', JSON.stringify(offlineData));
+                },
+
+                getOfflineExpenses() {
+                    const offlineData = JSON.parse(localStorage.getItem('expense_tracker_offline_data') || '[]');
+                    return offlineData.map(item => ({
+                        ...item.data,
+                        id: item.id,
+                        timestamp: item.timestamp
+                    }));
+                },
+
+                getTotalExpenses() {
+                    return this.getOfflineExpenses().reduce((total, expense) => total + expense.amount, 0);
+                },
+
+                getCategoryIcon(category) {
+                    const icons = {
+                        'Food': '🍽️',
+                        'Transport': '🚗',
+                        'Shopping': '🛒',
+                        'Entertainment': '🎬',
+                        'Bills': '📄',
+                        'Other': '📝'
+                    };
+                    return icons[category] || '📝';
+                },
+
+                formatCurrency(amount) {
+                    return '$' + parseFloat(amount || 0).toFixed(2);
+                },
+
+                formatDate(dateStr) {
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                },
+
+                showToastMessage(message, type = 'success') {
+                    this.toastMessage = message;
+                    this.toastType = type;
+                    this.showToast = true;
+                    setTimeout(() => {
+                        this.showToast = false;
+                    }, 4000);
+                },
+
+                checkConnection() {
+                    if (navigator.onLine) {
+                        window.location.href = '/dashboard';
+                    } else {
+                        this.showToastMessage('Still offline. Please check your connection.', 'error');
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
