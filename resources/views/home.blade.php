@@ -81,8 +81,16 @@
                     </div>
                 </div>
                 <div class="relative animate-fade-in">
-                    <!-- Dashboard preview (closer to actual UI) -->
-                    <div class="mx-auto w-full max-w-lg bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden border">
+                    <!-- Animated Dashboard preview -->
+                    <div x-data="dashboardPreview()" x-init="startDemo()" @mouseenter="isPaused = true" @mouseleave="isPaused = false" class="mx-auto w-full max-w-lg bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden border relative">
+                        <!-- Fake cursor -->
+                        <div class="absolute z-50 transition-all duration-500 ease-out" :style="'left:'+cursorLeft+'%; top:'+cursorTop+'px'">
+                            <svg width="18" height="24" viewBox="0 0 24 24" class="drop-shadow" fill="#111827">
+                                <path d="M7 2l10 10-6 1 3 7-4 2-3-7-6 3z"></path>
+                            </svg>
+                            <div x-show="clickFlash" class="absolute -left-2 -top-2 w-6 h-6 rounded-full bg-purple-500/30 animate-ping" x-transition></div>
+                        </div>
+
                         <!-- Header like dashboard -->
                         <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-5">
                             <div class="flex items-center justify-between">
@@ -100,74 +108,239 @@
                                 </div>
                             </div>
                         </div>
+
                         <!-- Tabs like dashboard -->
                         <div class="px-4 pt-3">
                             <div class="rounded-xl bg-gray-50 border overflow-hidden">
                                 <div class="grid grid-cols-3 text-sm font-semibold">
-                                    <div class="text-center py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white">Calendar</div>
-                                    <div class="text-center py-2 text-gray-600">Expenses</div>
-                                    <div class="text-center py-2 text-gray-600">Summary</div>
+                                    <button @click="go('calendar')" :class="activeTab==='calendar' ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white' : 'text-gray-600'" class="text-center py-2 transition-colors">Calendar</button>
+                                    <button @click="go('expenses')" :class="activeTab==='expenses' ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white' : 'text-gray-600'" class="text-center py-2 transition-colors">Expenses</button>
+                                    <button @click="go('summary')" :class="activeTab==='summary' ? 'bg-gradient-to-r from-indigo-500 to-blue-500 text-white' : 'text-gray-600'" class="text-center py-2 transition-colors">Summary</button>
                                 </div>
                             </div>
                         </div>
-                        <!-- Mini calendar -->
-                        <div class="p-4">
-                            <div class="grid grid-cols-7 gap-1 text-[11px] text-gray-500 mb-1">
-                                <div class="text-center">Sun</div><div class="text-center">Mon</div><div class="text-center">Tue</div><div class="text-center">Wed</div><div class="text-center">Thu</div><div class="text-center">Fri</div><div class="text-center">Sat</div>
+
+                        <!-- Content -->
+                        <div class="p-4 h-[340px] sm:h-[360px] relative overflow-hidden">
+                            <!-- Calendar -->
+                            <div x-show="activeTab==='calendar'" x-transition.opacity.duration.200ms class="absolute inset-0 p-4 space-y-3">
+                                <div class="grid grid-cols-7 gap-1 text-[11px] text-gray-500 mb-1">
+                                    <div class="text-center">Sun</div><div class="text-center">Mon</div><div class="text-center">Tue</div><div class="text-center">Wed</div><div class="text-center">Thu</div><div class="text-center">Fri</div><div class="text-center">Sat</div>
+                                </div>
+                                <div class="grid grid-cols-7 gap-1">
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-blue-100 border-blue-300 shadow relative">
+                                        <span class="absolute top-1 left-1 text-xs font-semibold text-blue-700">5</span>
+                                        <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$40.00</span>
+                                    </div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-green-50 border-green-300 relative">
+                                        <span class="absolute top-1 left-1 text-xs font-semibold text-gray-700">2</span>
+                                        <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$12.50</span>
+                                    </div>
+                                    <!-- next row -->
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-green-50 border-green-300 relative">
+                                        <span class="absolute top-1 left-1 text-xs font-semibold text-gray-700">9</span>
+                                        <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$78.25</span>
+                                    </div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <!-- row 3 -->
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-green-50 border-green-300 relative">
+                                        <span class="absolute top-1 left-1 text-xs font-semibold text-gray-700">18</span>
+                                        <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$95.10</span>
+                                    </div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <!-- row 4 -->
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-green-50 border-green-300 relative">
+                                        <span class="absolute top-1 left-1 text-xs font-semibold text-gray-700">23</span>
+                                        <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$25.00</span>
+                                    </div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                    <div class="h-12 rounded-lg border bg-gray-50"></div>
+                                </div>
+                                <div class="mt-2 flex items-center justify-center space-x-4 text-[11px] text-gray-500">
+                                    <div class="flex items-center"><div class="w-3 h-3 bg-blue-100 border border-blue-300 rounded mr-1"></div><span>Today</span></div>
+                                    <div class="flex items-center"><div class="w-3 h-3 bg-green-50 border border-green-200 rounded mr-1"></div><span>Has Expenses</span></div>
+                                </div>
                             </div>
-                            <div class="grid grid-cols-7 gap-1">
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-blue-100 border-blue-300 shadow relative">
-                                    <span class="absolute top-1 left-1 text-xs font-semibold text-blue-700">5</span>
-                                    <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$40.00</span>
+
+                            <!-- Expenses -->
+                            <div x-show="activeTab==='expenses'" x-transition.opacity.duration.200ms class="absolute inset-0 p-4 space-y-3">
+                                <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border text-sm flex items-center justify-between">
+                                    <div class="font-semibold text-gray-700">August Summary</div>
+                                    <div class="text-blue-700 font-bold">$260.85</div>
                                 </div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-green-50 border-green-300 relative">
-                                    <span class="absolute top-1 left-1 text-xs font-semibold text-gray-700">2</span>
-                                    <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$12.50</span>
+                                <div class="space-y-3">
+                                    <div class="flex items-start justify-between p-3 border rounded-lg hover:shadow-sm">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mr-3">🍽️</div>
+                                            <div>
+                                                <div class="font-semibold">Lunch</div>
+                                                <div class="text-xs text-gray-500">Food • Aug 2</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-red-600 font-bold">$12.50</div>
+                                    </div>
+                                    <div class="flex items-start justify-between p-3 border rounded-lg hover:shadow-sm">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mr-3">🚗</div>
+                                            <div>
+                                                <div class="font-semibold">Gas</div>
+                                                <div class="text-xs text-gray-500">Transport • Aug 5</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-red-600 font-bold">$40.00</div>
+                                    </div>
+                                    <div class="flex items-start justify-between p-3 border rounded-lg hover:shadow-sm">
+                                        <div class="flex items-center">
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mr-3">🛒</div>
+                                            <div>
+                                                <div class="font-semibold">Groceries</div>
+                                                <div class="text-xs text-gray-500">Shopping • Aug 9</div>
+                                            </div>
+                                        </div>
+                                        <div class="text-red-600 font-bold">$78.25</div>
+                                    </div>
                                 </div>
-                                <!-- next row -->
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-green-50 border-green-300 relative">
-                                    <span class="absolute top-1 left-1 text-xs font-semibold text-gray-700">9</span>
-                                    <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$78.25</span>
-                                </div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <!-- row 3 -->
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-green-50 border-green-300 relative">
-                                    <span class="absolute top-1 left-1 text-xs font-semibold text-gray-700">18</span>
-                                    <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$95.10</span>
-                                </div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <!-- row 4 -->
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-green-50 border-green-300 relative">
-                                    <span class="absolute top-1 left-1 text-xs font-semibold text-gray-700">23</span>
-                                    <span class="absolute bottom-1 left-1 text-[10px] font-bold text-red-600">$25.00</span>
-                                </div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
-                                <div class="h-12 rounded-lg border bg-gray-50"></div>
                             </div>
-                            <div class="mt-3 flex items-center justify-center space-x-4 text-[11px] text-gray-500">
-                                <div class="flex items-center"><div class="w-3 h-3 bg-blue-100 border border-blue-300 rounded mr-1"></div><span>Today</span></div>
-                                <div class="flex items-center"><div class="w-3 h-3 bg-green-50 border border-green-200 rounded mr-1"></div><span>Has Expenses</span></div>
+
+                            <!-- Summary -->
+                            <div x-show="activeTab==='summary'" x-transition.opacity.duration.200ms class="absolute inset-0 p-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div class="p-4 rounded-lg text-center bg-gradient-to-br from-red-50 to-pink-50 border">
+                                        <div class="text-2xl mb-1">💸</div>
+                                        <div class="text-xl font-bold text-red-600">$260.85</div>
+                                        <div class="text-xs text-gray-500">Total</div>
+                                    </div>
+                                    <div class="p-4 rounded-lg text-center bg-gradient-to-br from-blue-50 to-indigo-50 border">
+                                        <div class="text-2xl mb-1">📈</div>
+                                        <div class="text-xl font-bold text-blue-600">$12.42</div>
+                                        <div class="text-xs text-gray-500">Daily Avg</div>
+                                    </div>
+                                    <div class="p-4 rounded-lg text-center bg-gradient-to-br from-purple-50 to-violet-50 border">
+                                        <div class="text-2xl mb-1">🎯</div>
+                                        <div class="text-xl font-bold text-purple-600">$95.10</div>
+                                        <div class="text-xs text-gray-500">Largest</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Add Expense Modal (mock) inside preview -->
+                            <div x-show="showAddModal" x-transition.opacity class="absolute inset-0 z-40 bg-black/40 flex items-center justify-center">
+                                <div class="bg-white rounded-xl shadow-2xl w-[94%] max-w-md overflow-hidden">
+                                    <div class="bg-gradient-to-r from-green-500 to-emerald-500 text-white p-4">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <h2 class="text-lg font-bold">Add Expense</h2>
+                                                <p class="text-green-100 text-xs">Thu, Aug 5</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="p-4 space-y-3 text-sm">
+                                        <div>
+                                            <label class="block text-gray-700 mb-2">Category</label>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                <button class="p-2 border-2 rounded-lg hover:border-green-500">🍽️ Food</button>
+                                                <button class="p-2 border-2 rounded-lg hover:border-green-500">🚗 Transport</button>
+                                                <button class="p-2 border-2 rounded-lg hover:border-green-500">🛒 Shopping</button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-700 mb-2">Description</label>
+                                            <input type="text" placeholder="e.g., Lunch" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-700 mb-2">Amount ($)</label>
+                                            <input type="number" step="0.01" placeholder="0.00" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" />
+                                        </div>
+                                        <div class="flex gap-2 pt-1">
+                                            <button class="flex-1 px-3 py-2 rounded-lg bg-gray-200 text-gray-700">Cancel</button>
+                                            <button class="flex-1 px-3 py-2 rounded-lg text-white bg-gradient-to-r from-green-500 to-emerald-500">Add Expense</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Toast inside preview -->
+                            <div x-show="showToast" x-transition.opacity class="absolute bottom-3 right-3 z-40 bg-green-50 border border-green-200 text-green-800 text-xs rounded-md px-3 py-2 shadow">
+                                Expense added!
                             </div>
                         </div>
+
+                        <script>
+                            function dashboardPreview(){
+                                return {
+                                    activeTab: 'calendar',
+                                    cursorLeft: 16, // percent
+                                    cursorTop: 108, // px relative inside card
+                                    clickFlash: false,
+                                    step: 0,
+                                    isPaused: false,
+                                    showAddModal: false,
+                                    showToast: false,
+                                    steps: [
+                                        { tab: 'calendar', left: 16, top: 108 },            // Calendar tab
+                                        { tab: 'calendar', left: 62, top: 205, action: 'openModal' }, // Click day cell
+                                        { tab: 'calendar', left: 74, top: 315, action: 'addExpense' }, // Click Add in modal
+                                        { tab: 'expenses', left: 50, top: 108 },           // Expenses tab
+                                        { tab: 'summary', left: 84, top: 108 },            // Summary tab
+                                    ],
+                                    startDemo(){
+                                        setInterval(() => {
+                                            if (this.isPaused) return;
+                                            this.step = (this.step + 1) % this.steps.length;
+                                            const s = this.steps[this.step];
+                                            this.activeTab = s.tab;
+                                            this.cursorLeft = s.left;
+                                            this.cursorTop = s.top;
+                                            this.click();
+
+                                            // Handle actions
+                                            if (s.action === 'openModal') {
+                                                setTimeout(()=>{ this.showAddModal = true; }, 250);
+                                            }
+                                            if (s.action === 'addExpense') {
+                                                setTimeout(()=>{
+                                                    // Simulate add & close modal + toast
+                                                    this.showAddModal = false;
+                                                    this.showToast = true;
+                                                    setTimeout(()=> this.showToast = false, 1200);
+                                                }, 350);
+                                            }
+                                        }, 2600);
+                                    },
+                                    go(tab){
+                                        const map = { calendar: 0, expenses: 3, summary: 4 };
+                                        const s = this.steps[map[tab]];
+                                        this.activeTab = tab;
+                                        this.cursorLeft = s.left;
+                                        this.cursorTop = s.top;
+                                        this.click();
+                                    },
+                                    click(){
+                                        this.clickFlash = true;
+                                        setTimeout(()=> this.clickFlash = false, 220);
+                                    }
+                                }
+                            }
+                        </script>
                     </div>
                     <p class="mt-3 text-xs text-gray-500 text-center">Preview of the dashboard you’ll use after sign up (mocked)</p>
                 </div>
