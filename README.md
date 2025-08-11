@@ -15,4 +15,6 @@ The AI models used to build this project include:
 
 This project is hosted on [`render.com`](https://render.com).
 
-You can visit it here: [https://month-expense.onrender.com/](https://month-expense.onrender.com/)
+## Live Demo
+
+You can access the live project here: [https://month-expense.onrender.com/](https://month-expense.onrender.com/)
