@@ -15,6 +15,11 @@ Route::get('/', function () {
     return view('home');
 });
 
+// Pricing page
+Route::get('/pricing', function () {
+    return view('pricing');
+})->name('pricing');
+
 // Authentication Routes
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
